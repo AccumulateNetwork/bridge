@@ -20,6 +20,7 @@ const (
 type Gnosis struct {
 	API         string
 	SafeAddress string
+	PrivateKey  string
 }
 
 type ResponseSafe struct {
@@ -45,6 +46,7 @@ type ResponseEstSafeTxGas struct {
 	SafeTxGas int64 `json:"safeTxGas,string,omitempty"`
 }
 
+// NewGnosis constructs the gnosis safe
 func NewGnosis(conf *config.Config) (*Gnosis, error) {
 
 	g := &Gnosis{}
@@ -63,13 +65,18 @@ func NewGnosis(conf *config.Config) (*Gnosis, error) {
 	if conf.EVM.SafeAddress == "" {
 		return nil, fmt.Errorf("received empty safeAddress from config: %s", conf.EVM.SafeAddress)
 	}
-
 	g.SafeAddress = conf.EVM.SafeAddress
+
+	if conf.EVM.PrivateKey == "" {
+		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.EVM.PrivateKey)
+	}
+	g.PrivateKey = conf.EVM.PrivateKey
 
 	return g, nil
 
 }
 
+// GetSafe gets safe info and current nonce
 func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 
 	body, err := g.makeRequest("safes/"+g.SafeAddress, nil)
@@ -87,6 +94,7 @@ func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 
 }
 
+// EstimateSafeTxGas estimates safe tx costs
 func (g *Gnosis) EstimateSafeTxGas(req *RequestEstSafeTxGas) (*ResponseEstSafeTxGas, error) {
 
 	req.To = g.SafeAddress
@@ -108,6 +116,7 @@ func (g *Gnosis) EstimateSafeTxGas(req *RequestEstSafeTxGas) (*ResponseEstSafeTx
 
 }
 
+// internal
 func (g *Gnosis) makeRequest(path string, req []byte) ([]byte, error) {
 
 	var resp *http.Response

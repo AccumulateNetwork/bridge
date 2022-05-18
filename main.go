@@ -48,10 +48,10 @@ func start(configFile string) {
 
 		safe, err := g.GetSafe()
 		if err != nil {
-			log.Info(err)
+			log.Fatal(err)
 		}
 
-		log.Info(safe)
+		log.Info(safe.Nonce)
 
 		req := &gnosis.RequestEstSafeTxGas{}
 		req.Value = 0
@@ -59,7 +59,7 @@ func start(configFile string) {
 
 		gas, err := g.EstimateSafeTxGas(req)
 		if err != nil {
-			log.Info(err)
+			log.Fatal(err)
 		}
 
 		log.Info(gas)
