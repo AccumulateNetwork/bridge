@@ -64,6 +64,13 @@ func start(configFile string) {
 
 		log.Info(gas)
 
+		mint, err := g.MintTx(&gas.SafeTxGas, &safe.Nonce)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		log.Info(mint)
+
 		// Init Accumulate Bridge API
 		log.Info("Starting Accumulate Bridge API")
 		log.Fatal(http.ListenAndServe(":"+strconv.Itoa(conf.App.APIPort), nil))

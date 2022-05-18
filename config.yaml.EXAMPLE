@@ -9,5 +9,6 @@ evm:
 #  node: ""
 #  chainid: ""
 #  safeaddress: ""
+#  bridgeaddress: ""
 #  infurakey: ""
 #  privatekey: ""

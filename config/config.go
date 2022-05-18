@@ -21,11 +21,12 @@ type Config struct {
 		PrivateKey string `required:"true" default:"" json:"privateKey" form:"privateKey" query:"privateKey"`
 	}
 	EVM struct {
-		Node        string `required:"true" default:"" json:"node" form:"node" query:"node"`
-		ChainId     int    `required:"true" default:"1" json:"chainId" form:"chainId" query:"chainId"`
-		SafeAddress string `required:"true" default:"" json:"safeAddress" form:"safeAddress" query:"safeAddress"`
-		InfuraKey   string `required:"false" default:"" json:"infuraKey" form:"infuraKey" query:"infuraKey"`
-		PrivateKey  string `required:"true" default:"" json:"privateKey" form:"privateKey" query:"privateKey"`
+		Node          string `required:"true" default:"" json:"node" form:"node" query:"node"`
+		ChainId       int    `required:"true" default:"1" json:"chainId" form:"chainId" query:"chainId"`
+		SafeAddress   string `required:"true" default:"" json:"safeAddress" form:"safeAddress" query:"safeAddress"`
+		BridgeAddress string `required:"true" default:"" json:"bridgeAddress" form:"bridgeAddress" query:"bridgeAddress"`
+		InfuraKey     string `required:"false" default:"" json:"infuraKey" form:"infuraKey" query:"infuraKey"`
+		PrivateKey    string `required:"true" default:"" json:"privateKey" form:"privateKey" query:"privateKey"`
 	}
 }
 
