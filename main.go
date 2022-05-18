@@ -46,12 +46,23 @@ func start(configFile string) {
 			log.Fatal(err)
 		}
 
-		safe, err := g.GetSafe(conf.EVM.SafeAddress)
+		safe, err := g.GetSafe()
 		if err != nil {
 			log.Info(err)
 		}
 
 		log.Info(safe)
+
+		req := &gnosis.RequestEstSafeTxGas{}
+		req.Value = 0
+		req.Operation = 0
+
+		gas, err := g.EstimateSafeTxGas(req)
+		if err != nil {
+			log.Info(err)
+		}
+
+		log.Info(gas)
 
 		// Init Accumulate Bridge API
 		log.Info("Starting Accumulate Bridge API")
