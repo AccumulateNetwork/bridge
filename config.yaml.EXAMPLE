@@ -1,0 +1,13 @@
+app:
+#  apiport: 8081
+#  loglevel: 4
+acme:
+#  node: ""
+#  keybook: ""
+#  privatekey: ""
+evm:
+#  node: ""
+#  chainid: ""
+#  safeaddress: ""
+#  infurakey: ""
+#  privatekey: ""
