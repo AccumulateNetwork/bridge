@@ -2,7 +2,10 @@ module github.com/AccumulateNetwork/bridge
 
 go 1.17
 
-require github.com/ethereum/go-ethereum v1.10.17
+require (
+	github.com/ethereum/go-ethereum v1.10.17
+	github.com/stretchr/testify v1.7.0
+)
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
@@ -33,6 +36,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/peterh/liner v1.1.1-0.20190123174540-a2c9a5303de7 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/tsdb v0.7.1 // indirect
 	github.com/rjeczalik/notify v0.9.1 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
@@ -49,6 +53,7 @@ require (
 	google.golang.org/protobuf v1.23.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
 require (
