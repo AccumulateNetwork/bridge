@@ -19,6 +19,6 @@ func TestGenerateMintTx(t *testing.T) {
 	got, err := GenerateMintTx(token, recipient, amount)
 	assert.NoError(t, err)
 
-	assert.Equal(t, got, want)
+	assert.Equal(t, want, got)
 
 }
