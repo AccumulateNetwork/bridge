@@ -55,7 +55,19 @@ func NewGnosis(conf *config.Config) (*Gnosis, error) {
 		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.EVM.PrivateKey)
 	}
 
-	privateKey, err := crypto.HexToECDSA(conf.EVM.PrivateKey)
+	g, err := g.ImportPrivateKey(conf.EVM.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return g, nil
+
+}
+
+// ImportPrivateKey imports private key and generates corresponding public key
+func (g *Gnosis) ImportPrivateKey(pk string) (*Gnosis, error) {
+
+	privateKey, err := crypto.HexToECDSA(pk)
 	if err != nil {
 		return nil, err
 	}
