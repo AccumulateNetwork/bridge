@@ -35,7 +35,7 @@ func (g *Gnosis) SignMintTx(tokenAddress string, recipientAddress string, amount
 		Operation:      0,
 		GasToken:       common.HexToAddress(ZERO_ADDR),
 		RefundReceiver: common.HexToAddress(ZERO_ADDR),
-		BaseGas:        *common.Big0,
+		BaseGas:        *big.NewInt(0),
 		SafeTxGas:      *big.NewInt(0),
 		Nonce:          *big.NewInt(safe.Nonce),
 	}
@@ -46,6 +46,7 @@ func (g *Gnosis) SignMintTx(tokenAddress string, recipientAddress string, amount
 	if err != nil {
 		return nil, nil, err
 	}
+
 	primaryTypeHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
 	if err != nil {
 		return nil, nil, err
