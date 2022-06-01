@@ -75,7 +75,12 @@ func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 // GetSafe gets safe info and current nonce
 func (g *Gnosis) CreateSafeMultisigTx(data *RequestGnosisTx) (*ResponseErrorGnosisTx, error) {
 
-	body, err := g.makeRequest("safes/"+g.SafeAddress+"/multisig-transactions/", nil)
+	param, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := g.makeRequest("safes/"+g.SafeAddress+"/multisig-transactions/", param)
 	if err != nil {
 		return nil, err
 	}
