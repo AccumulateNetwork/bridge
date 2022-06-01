@@ -26,7 +26,6 @@ func (g *Gnosis) SignMintTx(tokenAddress string, recipientAddress string, amount
 
 	// get contract transaction hash
 	gnosisSafeTx := core.GnosisSafeTx{
-		Sender:         common.NewMixedcaseAddress(common.HexToAddress(g.PublicKey.Hex())),
 		Safe:           common.NewMixedcaseAddress(common.HexToAddress(g.SafeAddress)),
 		To:             common.NewMixedcaseAddress(common.HexToAddress(g.BridgeAddress)),
 		Value:          *math.NewDecimal256(0),
@@ -38,29 +37,23 @@ func (g *Gnosis) SignMintTx(tokenAddress string, recipientAddress string, amount
 		BaseGas:        *big.NewInt(0),
 		SafeTxGas:      *big.NewInt(0),
 		Nonce:          *big.NewInt(safe.Nonce),
+		ChainId:        math.NewHexOrDecimal256(int64(g.ChainId)),
 	}
 
 	typedData := gnosisSafeTx.ToTypedData()
 
-	domainHash, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
+	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
 	if err != nil {
 		return nil, nil, err
 	}
-
-	primaryTypeHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
+	typedDataHash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
 	if err != nil {
 		return nil, nil, err
 	}
+	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typedDataHash)))
+	sighash := crypto.Keccak256Hash(rawData)
 
-	encodedTx := []byte{1, 19}
-	encodedTx = append(encodedTx, domainHash...)
-	encodedTx = append(encodedTx, primaryTypeHash...)
-
-	encodedTxHash := crypto.Keccak256Hash(encodedTx)
-
-	fmt.Println("encodedTxHash:", encodedTxHash.Hex())
-
-	contractTxHash, err := hexutil.Decode(encodedTxHash.Hex())
+	contractTxHash, err := hexutil.Decode(sighash.Hex())
 	if err != nil {
 		return nil, nil, err
 	}

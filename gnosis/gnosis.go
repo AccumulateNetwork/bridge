@@ -19,6 +19,7 @@ const (
 
 type Gnosis struct {
 	API           string
+	ChainId       int
 	SafeAddress   string
 	BridgeAddress string
 	PrivateKey    *ecdsa.PrivateKey
@@ -30,14 +31,16 @@ func NewGnosis(conf *config.Config) (*Gnosis, error) {
 
 	g := &Gnosis{}
 
-	switch conf.EVM.ChainId {
+	g.ChainId = conf.EVM.ChainId
+
+	switch g.ChainId {
 
 	case 1:
 		g.API = GNOSIS_API_MAINNET
 	case 4:
 		g.API = GNOSIS_API_RINKEBY
 	default:
-		return nil, fmt.Errorf("received unknown chainId from config: %s", strconv.Itoa(conf.EVM.ChainId))
+		return nil, fmt.Errorf("received unknown chainId from config: %s", strconv.Itoa(g.ChainId))
 
 	}
 
