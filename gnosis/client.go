@@ -33,9 +33,10 @@ type ResponseEstSafeTxGas struct {
 */
 
 type RequestGnosisTx struct {
+	Safe                    string  `json:"safe"`
 	To                      string  `json:"to"`
 	Value                   int64   `json:"value"`
-	Data                    *string `json:"data"`
+	Data                    string  `json:"data"`
 	Operation               int64   `json:"operation"`
 	GasToken                string  `json:"gasToken"`
 	SafeTxGas               int64   `json:"safeTxGas"`
@@ -68,6 +69,24 @@ func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 	}
 
 	return &safe, nil
+
+}
+
+// GetSafe gets safe info and current nonce
+func (g *Gnosis) CreateSafeMultisigTx(data *RequestGnosisTx) (*ResponseErrorGnosisTx, error) {
+
+	body, err := g.makeRequest("safes/"+g.SafeAddress+"/multisig-transactions/", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp ResponseErrorGnosisTx
+
+	if err = json.Unmarshal(body, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 
 }
 

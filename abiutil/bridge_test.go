@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,6 +20,6 @@ func TestGenerateMintTx(t *testing.T) {
 	got, err := GenerateMintTx(token, recipient, amount)
 	assert.NoError(t, err)
 
-	assert.Equal(t, want, got)
+	assert.Equal(t, want, hexutil.Encode(got))
 
 }
