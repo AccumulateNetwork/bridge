@@ -111,6 +111,70 @@ func main() {
 
 				},
 			},
+			{
+				Name:  "submit",
+				Usage: "submit ethereum tx from gnosis safe",
+				Action: func(c *cli.Context) error {
+
+					if c.NArg() != 3 {
+						printSubmitHelp()
+						return nil
+					}
+
+					nonce, err := strconv.ParseInt(c.Args().Get(0), 10, 64)
+					if err != nil {
+						fmt.Print("incorrect nonce: ")
+						return err
+					}
+
+					gasPrice, err := strconv.ParseInt(c.Args().Get(0), 10, 64)
+					if err != nil {
+						fmt.Print("incorrect gas price: ")
+						return err
+					}
+
+					priorityFee, err := strconv.ParseInt(c.Args().Get(2), 10, 64)
+					if err != nil {
+						fmt.Print("incorrect priority fee: ")
+						return err
+					}
+
+					var conf *config.Config
+					configFile := c.String("config")
+
+					if configFile == "" {
+						usr, err := user.Current()
+						if err != nil {
+							return err
+						}
+						configFile = usr.HomeDir + "/.accumulatebridge/config.yaml"
+					}
+
+					fmt.Printf("using config: %s\n", configFile)
+
+					if conf, err = config.NewConfig(configFile); err != nil {
+						fmt.Print("can not load config: ")
+						return err
+					}
+
+					g, err := gnosis.NewGnosis(conf)
+					if err != nil {
+						fmt.Print("can not init gnosis module: ")
+						return err
+					}
+
+					safe, err := g.GetSafe()
+					if err != nil {
+						fmt.Print("can not get gnosis safe: ")
+						return err
+					}
+
+					fmt.Print(nonce, gasPrice, priorityFee, safe)
+
+					return nil
+
+				},
+			},
 		},
 	}
 
@@ -126,4 +190,8 @@ func main() {
 
 func printMintHelp() {
 	fmt.Println("mint [token] [recipient] [amount]")
+}
+
+func printSubmitHelp() {
+	fmt.Println("submit [gnosis safe tx nonce] [max gwei price] [max priority fee]")
 }
