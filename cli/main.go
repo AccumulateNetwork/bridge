@@ -31,7 +31,7 @@ func main() {
 		Commands: []*cli.Command{
 			{
 				Name:  "mint",
-				Usage: "generates and signs tx to mint wrapped token",
+				Usage: "Generates and signs tx to mint wrapped token",
 				Action: func(c *cli.Context) error {
 
 					if c.NArg() != 3 {
@@ -113,7 +113,7 @@ func main() {
 			},
 			{
 				Name:  "submit",
-				Usage: "submit ethereum tx from gnosis safe",
+				Usage: "Submits ethereum tx from gnosis safe",
 				Action: func(c *cli.Context) error {
 
 					if c.NArg() != 3 {
