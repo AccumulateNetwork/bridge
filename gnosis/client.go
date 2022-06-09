@@ -72,7 +72,7 @@ func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 
 }
 
-// GetSafe gets safe info and current nonce
+// CreateSafeMultisigTx submits multisig tx to gnosis safe API
 func (g *Gnosis) CreateSafeMultisigTx(data *RequestGnosisTx) (*ResponseErrorGnosisTx, error) {
 
 	param, err := json.Marshal(data)
