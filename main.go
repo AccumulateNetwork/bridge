@@ -75,6 +75,8 @@ func start(configFile string) {
 		fmt.Println("Accumulate address: ", hexutil.Encode(a.PublicKey))
 		fmt.Println("Accumulate API: ", a.API)
 
+		fmt.Println("Getting Accumulate tokens...")
+
 		// Init Accumulate Bridge API
 		fmt.Println("Starting Accumulate Bridge API")
 		log.Fatal(http.ListenAndServe(":"+strconv.Itoa(conf.App.APIPort), nil))

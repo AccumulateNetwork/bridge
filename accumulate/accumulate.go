@@ -36,7 +36,7 @@ func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.ACME.PrivateKey)
 	}
 
-	c, err := c.ImportPrivateKey(conf.EVM.PrivateKey)
+	c, err := c.ImportPrivateKey(conf.ACME.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -53,11 +53,8 @@ func (c *AccumulateClient) ImportPrivateKey(pk string) (*AccumulateClient, error
 		return nil, err
 	}
 
-	privKey := ed25519.PrivateKey(privateKey)
-	pubKey := privKey.Public().(ed25519.PublicKey)
-
-	c.PrivateKey = privKey
-	c.PublicKey = pubKey
+	c.PrivateKey = ed25519.PrivateKey(privateKey)
+	c.PublicKey = c.PrivateKey.Public().(ed25519.PublicKey)
 
 	return c, nil
 
