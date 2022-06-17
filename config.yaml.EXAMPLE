@@ -7,8 +7,8 @@ acme:
 #  keybook: ""
 #  privatekey: ""
 #  tokens:
-#  - "ACME"
-#  - "TEST"
+#  - name: "ACME"
+#  - name: "TEST"
 evm:
 #  node: ""
 #  chainid: 1

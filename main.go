@@ -76,6 +76,9 @@ func start(configFile string) {
 		fmt.Println("Accumulate API: ", a.API)
 
 		fmt.Println("Getting Accumulate tokens...")
+		for _, item := range conf.ACME.Tokens {
+			fmt.Println(item.Symbol)
+		}
 
 		// Init Accumulate Bridge API
 		fmt.Println("Starting Accumulate Bridge API")
