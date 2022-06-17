@@ -23,13 +23,14 @@ type Config struct {
 		Tokens     []string `required:"true" default:"" json:"tokens" form:"tokens" query:"tokens"`
 	}
 	EVM struct {
-		Node          string `required:"true" default:"" json:"node" form:"node" query:"node"`
-		ChainId       int    `required:"true" default:"1" json:"chainId" form:"chainId" query:"chainId"`
-		SafeAddress   string `required:"true" default:"" json:"safeAddress" form:"safeAddress" query:"safeAddress"`
-		BridgeAddress string `required:"true" default:"" json:"bridgeAddress" form:"bridgeAddress" query:"bridgeAddress"`
-		InfuraKey     string `required:"false" default:"" json:"infuraKey" form:"infuraKey" query:"infuraKey"`
-		PrivateKey    string `required:"true" default:"" json:"privateKey" form:"privateKey" query:"privateKey"`
-		MaxGasFee     int    `required:"true" default:"30" json:"maxGasFee" form:"maxGasFee" query:"maxGasFee"`
+		Node                string `required:"false" default:"" json:"node" form:"node" query:"node"`
+		ChainId             int    `required:"true" default:"1" json:"chainId" form:"chainId" query:"chainId"`
+		InfuraProjectID     string `required:"false" default:"" json:"infuraProjectID" form:"infuraProjectID" query:"infuraProjectID"`
+		InfuraProjectSecret string `required:"false" default:"" json:"infuraProjectSecret" form:"infuraProjectSecret" query:"infuraProjectSecret"`
+		SafeAddress         string `required:"true" default:"" json:"safeAddress" form:"safeAddress" query:"safeAddress"`
+		BridgeAddress       string `required:"true" default:"" json:"bridgeAddress" form:"bridgeAddress" query:"bridgeAddress"`
+		PrivateKey          string `required:"true" default:"" json:"privateKey" form:"privateKey" query:"privateKey"`
+		MaxGasFee           int    `required:"true" default:"30" json:"maxGasFee" form:"maxGasFee" query:"maxGasFee"`
 	}
 }
 

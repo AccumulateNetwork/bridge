@@ -12,8 +12,9 @@ acme:
 evm:
 #  node: ""
 #  chainid: 1
+#  infuraprojectid: ""
+#  infuraprojectsecret: ""
 #  safeaddress: ""
 #  bridgeaddress: ""
-#  infurakey: ""
 #  privatekey: ""
 #  maxgasfee: 30

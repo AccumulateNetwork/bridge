@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	ETHEREUM_API = ""
-	RINKEBY_API  = ""
+	ETHEREUM_API = "https://mainnet.infura.io/v3"
+	RINKEBY_API  = "https://rinkeby.infura.io/v3"
 )
 
 type EVMClient struct {
@@ -32,9 +32,9 @@ func NewEVM(conf *config.Config) (*EVMClient, error) {
 	switch c.ChainId {
 
 	case 1:
-		c.API = ETHEREUM_API
+		c.API = ETHEREUM_API + "/" + conf.EVM.InfuraProjectID
 	case 4:
-		c.API = RINKEBY_API
+		c.API = RINKEBY_API + "/" + conf.EVM.InfuraProjectID
 	default:
 		return nil, fmt.Errorf("received unknown chainId from config: %s", strconv.Itoa(c.ChainId))
 
