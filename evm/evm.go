@@ -16,10 +16,11 @@ const (
 )
 
 type EVMClient struct {
-	API        string
-	ChainId    int
-	PrivateKey *ecdsa.PrivateKey
-	PublicKey  common.Address
+	API                 string
+	ChainId             int
+	PrivateKey          *ecdsa.PrivateKey
+	PublicKey           common.Address
+	InfuraProjectSecret string
 }
 
 // NewEVM constructs the EVM client
@@ -39,6 +40,8 @@ func NewEVM(conf *config.Config) (*EVMClient, error) {
 		return nil, fmt.Errorf("received unknown chainId from config: %s", strconv.Itoa(c.ChainId))
 
 	}
+
+	c.InfuraProjectSecret = conf.EVM.InfuraProjectSecret
 
 	if conf.EVM.PrivateKey == "" {
 		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.EVM.PrivateKey)
