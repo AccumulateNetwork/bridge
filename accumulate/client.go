@@ -2,6 +2,7 @@ package accumulate
 
 import (
 	"context"
+	"fmt"
 )
 
 type QueryTokenRequest struct {
@@ -9,9 +10,11 @@ type QueryTokenRequest struct {
 }
 
 type QueryTokenResponse struct {
-	URL       string `json:"url"`
-	Symbol    string `json:"symbol"`
-	Precision int64  `json:"precision"`
+	Data struct {
+		URL       string `json:"url"`
+		Symbol    string `json:"symbol"`
+		Precision int64  `json:"precision"`
+	}
 }
 
 // QueryToken gets Token info
@@ -28,12 +31,10 @@ func (c *AccumulateClient) QueryToken(token *QueryTokenRequest) (*QueryTokenResp
 		return nil, resp.Error
 	}
 
-	/*
-		err = resp.GetObject(tokenResp)
-		if err != nil || tokenResp.URL == "" || tokenResp.Symbol == "" {
-			return nil, fmt.Errorf("can not unmarshal api response")
-		}
-	*/
+	err = resp.GetObject(tokenResp)
+	if err != nil || tokenResp.Data.URL == "" || tokenResp.Data.Symbol == "" {
+		return nil, fmt.Errorf("can not unmarshal api response")
+	}
 
 	return tokenResp, nil
 

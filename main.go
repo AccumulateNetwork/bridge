@@ -44,7 +44,7 @@ func start(configFile string) {
 		var e *evm.EVMClient
 		var a *accumulate.AccumulateClient
 
-		fmt.Println("Using config: ", configFile)
+		fmt.Println("Using config:", configFile)
 
 		if conf, err = config.NewConfig(configFile); err != nil {
 			log.Fatal(err)
@@ -55,17 +55,17 @@ func start(configFile string) {
 			log.Fatal(err)
 		}
 
-		fmt.Println("Gnosis safe: ", g.SafeAddress)
-		fmt.Println("Bridge address: ", g.BridgeAddress)
-		fmt.Println("Gnosis API: ", g.API)
+		fmt.Println("Gnosis safe:", g.SafeAddress)
+		fmt.Println("Bridge address:", g.BridgeAddress)
+		fmt.Println("Gnosis API:", g.API)
 
 		// init evm client
 		if e, err = evm.NewEVM(conf); err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println("EVM address: ", e.PublicKey)
-		fmt.Println("EVM API: ", e.API)
+		fmt.Println("EVM address:", e.PublicKey)
+		fmt.Println("EVM API:", e.API)
 
 		// init gnosis client
 		if a, err = accumulate.NewAccumulateClient(conf); err != nil {
@@ -73,22 +73,21 @@ func start(configFile string) {
 		}
 
 		fmt.Printf("Accumulate public key hash: %x\n", sha256.Sum256(a.PublicKey))
-		fmt.Println("Accumulate API: ", a.API)
+		fmt.Println("Accumulate API:", a.API)
 
 		fmt.Println("Getting Accumulate tokens...")
 		for _, item := range conf.Tokens {
-			fmt.Println(item.AccTokenAddress)
+			fmt.Println("Trying to get:", item.AccTokenAddress)
 			token := &accumulate.QueryTokenResponse{}
 			token, err = a.QueryToken(&accumulate.QueryTokenRequest{URL: item.AccTokenAddress})
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Println(token)
-			fmt.Println(item.AccTokenAddress, item.EVMTokenAddress)
+			fmt.Println(token.Data)
 		}
 
 		// Init Accumulate Bridge API
-		fmt.Println("Starting Accumulate Bridge API")
+		fmt.Println("Starting Accumulate Bridge API...")
 		log.Fatal(http.ListenAndServe(":"+strconv.Itoa(conf.App.APIPort), nil))
 
 	}
