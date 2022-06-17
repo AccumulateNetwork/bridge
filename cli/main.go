@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/AccumulateNetwork/bridge/abiutil"
+	"github.com/AccumulateNetwork/bridge/accumulate"
 	"github.com/AccumulateNetwork/bridge/config"
 	"github.com/AccumulateNetwork/bridge/gnosis"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -112,12 +113,12 @@ func main() {
 				},
 			},
 			{
-				Name:  "submit",
+				Name:  "eth-submit",
 				Usage: "Submits ethereum tx from gnosis safe",
 				Action: func(c *cli.Context) error {
 
 					if c.NArg() != 3 {
-						printSubmitHelp()
+						printEthSubmitHelp()
 						return nil
 					}
 
@@ -175,6 +176,97 @@ func main() {
 
 				},
 			},
+			{
+				Name:  "redeem",
+				Usage: "Generates, signs and submits tx to redeem native tokens",
+				Action: func(c *cli.Context) error {
+
+					if c.NArg() != 3 {
+						printRedeemHelp()
+						return nil
+					}
+
+					token := c.Args().Get(0)
+					recipient := c.Args().Get(1)
+					amount, err := strconv.ParseInt(c.Args().Get(2), 10, 64)
+					if err != nil {
+						fmt.Print("incorrect amount: ")
+						return err
+					}
+
+					var conf *config.Config
+					configFile := c.String("config")
+
+					if configFile == "" {
+						usr, err := user.Current()
+						if err != nil {
+							return err
+						}
+						configFile = usr.HomeDir + "/.accumulatebridge/config.yaml"
+					}
+
+					fmt.Printf("using config: %s\n", configFile)
+
+					if conf, err = config.NewConfig(configFile); err != nil {
+						fmt.Print("can not load config: ")
+						return err
+					}
+
+					a, err := accumulate.NewAccumulateClient(conf)
+					if err != nil {
+						fmt.Print("can not init accumulate client: ")
+						return err
+					}
+
+					fmt.Print(a, token, recipient, amount)
+
+					return nil
+
+				},
+			},
+			{
+				Name:  "acc-sign",
+				Usage: "Signs existing redeem tx",
+				Action: func(c *cli.Context) error {
+
+					if c.NArg() != 1 {
+						printAccSignHelp()
+						return nil
+					}
+
+					txid := c.Args().Get(0)
+
+					var conf *config.Config
+					var err error
+					configFile := c.String("config")
+
+					if configFile == "" {
+						usr, err := user.Current()
+						if err != nil {
+							return err
+						}
+						configFile = usr.HomeDir + "/.accumulatebridge/config.yaml"
+					}
+
+					fmt.Printf("using config: %s\n", configFile)
+
+					if conf, err = config.NewConfig(configFile); err != nil {
+						fmt.Print("can not load config: ")
+						return err
+					}
+
+					a, err := accumulate.NewAccumulateClient(conf)
+					if err != nil {
+						fmt.Print("can not init accumulate client: ")
+						return err
+					}
+
+					fmt.Print(a, txid)
+
+					return nil
+
+				},
+			},
 		},
 	}
 
@@ -192,6 +284,14 @@ func printMintHelp() {
 	fmt.Println("mint [token] [recipient] [amount]")
 }
 
-func printSubmitHelp() {
-	fmt.Println("submit [gnosis safe tx nonce] [max gwei price] [max priority fee]")
+func printEthSubmitHelp() {
+	fmt.Println("eth-submit [gnosis safe tx nonce] [max gwei price] [max priority fee]")
+}
+
+func printRedeemHelp() {
+	fmt.Println("redeem [token] [recipient] [amount]")
+}
+
+func printAccSignHelp() {
+	fmt.Println("acc-sign [txid]")
 }
