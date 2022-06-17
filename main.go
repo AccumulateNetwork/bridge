@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"github.com/AccumulateNetwork/bridge/config"
 	"github.com/AccumulateNetwork/bridge/evm"
 	"github.com/AccumulateNetwork/bridge/gnosis"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/labstack/gommon/log"
 )
@@ -72,12 +72,19 @@ func start(configFile string) {
 			log.Fatal(err)
 		}
 
-		fmt.Println("Accumulate address: ", hexutil.Encode(a.PublicKey))
+		fmt.Printf("Accumulate public key hash: %x\n", sha256.Sum256(a.PublicKey))
 		fmt.Println("Accumulate API: ", a.API)
 
 		fmt.Println("Getting Accumulate tokens...")
-		for _, item := range conf.ACME.Tokens {
-			fmt.Println(item.Symbol)
+		for _, item := range conf.Tokens {
+			fmt.Println(item.AccTokenAddress)
+			token := &accumulate.QueryTokenResponse{}
+			token, err = a.QueryToken(&accumulate.QueryTokenRequest{URL: item.AccTokenAddress})
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(token)
+			fmt.Println(item.AccTokenAddress, item.EVMTokenAddress)
 		}
 
 		// Init Accumulate Bridge API

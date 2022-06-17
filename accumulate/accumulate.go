@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/AccumulateNetwork/bridge/config"
+	"github.com/ybbus/jsonrpc/v3"
 )
 
 type AccumulateClient struct {
@@ -13,6 +14,7 @@ type AccumulateClient struct {
 	KeyBook    string
 	PrivateKey ed25519.PrivateKey
 	PublicKey  ed25519.PublicKey
+	Client     jsonrpc.RPCClient
 }
 
 // NewAccumulateClient constructs the Accumulate client
@@ -25,6 +27,7 @@ func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 	}
 
 	c.API = conf.ACME.Node
+	c.Client = jsonrpc.NewClient(conf.ACME.Node)
 
 	if conf.ACME.KeyBook == "" {
 		return nil, fmt.Errorf("received empty keyBook from config: %s", conf.ACME.KeyBook)
@@ -54,7 +57,12 @@ func (c *AccumulateClient) ImportPrivateKey(pk string) (*AccumulateClient, error
 	}
 
 	c.PrivateKey = ed25519.PrivateKey(privateKey)
-	c.PublicKey = c.PrivateKey.Public().(ed25519.PublicKey)
+	publicKey, ok := c.PrivateKey.Public().(ed25519.PublicKey)
+	if !ok {
+		return nil, fmt.Errorf("error casting public key to ed25519")
+	}
+
+	c.PublicKey = publicKey
 
 	return c, nil
 
