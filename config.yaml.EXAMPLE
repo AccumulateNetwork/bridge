@@ -3,12 +3,14 @@ app:
 #  loglevel: 4
 acme:
 #  node: ""
+#  bridgeadi: ""
 #  keybook: ""
 #  privatekey: ""
 evm:
 #  node: ""
-#  chainid: ""
+#  chainid: 1
 #  safeaddress: ""
 #  bridgeaddress: ""
 #  infurakey: ""
 #  privatekey: ""
+#  maxgasfee: 30

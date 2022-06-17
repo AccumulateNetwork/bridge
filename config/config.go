@@ -17,6 +17,7 @@ type Config struct {
 	}
 	ACME struct {
 		Node       string `required:"true" default:"" json:"node" form:"node" query:"node"`
+		BridgeADI  string `required:"true" default:"" json:"bridgeADI" form:"bridgeADI" query:"bridgeADI"`
 		KeyBook    string `required:"true" default:"" json:"keyBook" form:"keyBook" query:"keyBook"`
 		PrivateKey string `required:"true" default:"" json:"privateKey" form:"privateKey" query:"privateKey"`
 	}
@@ -27,6 +28,7 @@ type Config struct {
 		BridgeAddress string `required:"true" default:"" json:"bridgeAddress" form:"bridgeAddress" query:"bridgeAddress"`
 		InfuraKey     string `required:"false" default:"" json:"infuraKey" form:"infuraKey" query:"infuraKey"`
 		PrivateKey    string `required:"true" default:"" json:"privateKey" form:"privateKey" query:"privateKey"`
+		MaxGasFee     int    `required:"true" default:"30" json:"maxGasFee" form:"maxGasFee" query:"maxGasFee"`
 	}
 }
 
