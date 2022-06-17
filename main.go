@@ -44,7 +44,7 @@ func start(configFile string) {
 		var e *evm.EVMClient
 		var a *accumulate.AccumulateClient
 
-		fmt.Println("Using config : ", configFile)
+		fmt.Println("Using config: ", configFile)
 
 		if conf, err = config.NewConfig(configFile); err != nil {
 			log.Fatal(err)
