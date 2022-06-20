@@ -1,7 +1,8 @@
 package main
 
 import (
-	"crypto/sha256"
+	"bytes"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"net/http"
@@ -72,8 +73,25 @@ func start(configFile string) {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("Accumulate public key hash: %x\n", sha256.Sum256(a.PublicKey))
+		fmt.Printf("Accumulate public key hash: %x\n", a.PublicKeyHash)
 		fmt.Println("Accumulate API:", a.API)
+
+		fmt.Println("Getting bridge leader...")
+		leaderDataAccount := conf.ACME.BridgeADI + accumulate.ACC_LEADER
+		fmt.Println("Trying to get:", leaderDataAccount)
+		leaderData := &accumulate.QueryDataResponse{}
+		leaderData, err = a.QueryLatestDataEntry(&accumulate.URLRequest{URL: leaderDataAccount})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Bridge leader is", leaderData.Data.Entry.Data[0])
+		decodedLeader, err := hex.DecodeString(leaderData.Data.Entry.Data[0])
+		if err != nil {
+			log.Fatal(err)
+		}
+		if bytes.Equal(decodedLeader, a.PublicKeyHash) {
+			fmt.Println("IT IS LEADER NODE")
+		}
 
 		fmt.Println("Getting Accumulate tokens...")
 		for _, item := range conf.ACME.Tokens {
