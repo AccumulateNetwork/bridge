@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-type QueryTokenRequest struct {
+type URLRequest struct {
 	URL string `json:"url"`
 }
 
@@ -18,7 +18,7 @@ type QueryTokenResponse struct {
 }
 
 // QueryToken gets Token info
-func (c *AccumulateClient) QueryToken(token *QueryTokenRequest) (*QueryTokenResponse, error) {
+func (c *AccumulateClient) QueryToken(token *URLRequest) (*QueryTokenResponse, error) {
 
 	tokenResp := &QueryTokenResponse{}
 

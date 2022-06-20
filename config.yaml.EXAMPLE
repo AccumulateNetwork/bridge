@@ -6,6 +6,9 @@ acme:
 #  bridgeadi: ""
 #  keybook: ""
 #  privatekey: ""
+#  tokens:
+#  - "acme"
+#  - "adi1.acme/test"
 evm:
 #  node: ""
 #  chainid: 1
@@ -15,8 +18,3 @@ evm:
 #  bridgeaddress: ""
 #  privatekey: ""
 #  maxgasfee: 30
-# tokens:
-# - accTokenAddress: "ACME"
-#   evmTokenAddress: ""
-# - accTokenAddress: "adi1.acme/TEST"
-#   evmTokenAddress: ""

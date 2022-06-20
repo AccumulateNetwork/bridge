@@ -76,10 +76,10 @@ func start(configFile string) {
 		fmt.Println("Accumulate API:", a.API)
 
 		fmt.Println("Getting Accumulate tokens...")
-		for _, item := range conf.Tokens {
-			fmt.Println("Trying to get:", item.AccTokenAddress)
+		for _, item := range conf.ACME.Tokens {
+			fmt.Println("Trying to get:", item)
 			token := &accumulate.QueryTokenResponse{}
-			token, err = a.QueryToken(&accumulate.QueryTokenRequest{URL: item.AccTokenAddress})
+			token, err = a.QueryToken(&accumulate.URLRequest{URL: item})
 			if err != nil {
 				log.Fatal(err)
 			}
