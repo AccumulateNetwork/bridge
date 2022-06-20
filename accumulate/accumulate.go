@@ -2,6 +2,7 @@ package accumulate
 
 import (
 	"crypto/ed25519"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 
@@ -9,12 +10,18 @@ import (
 	"github.com/ybbus/jsonrpc/v3"
 )
 
+const (
+	ACC_LEADER         = "/leader"   // data account: current leader (pubkeyhash)
+	ACC_TOKEN_REGISTRY = "/registry" // data account: token registry (accumulate token address, evm token address, evm chainid)
+)
+
 type AccumulateClient struct {
-	API        string
-	KeyBook    string
-	PrivateKey ed25519.PrivateKey
-	PublicKey  ed25519.PublicKey
-	Client     jsonrpc.RPCClient
+	API           string
+	KeyBook       string
+	PrivateKey    ed25519.PrivateKey
+	PublicKey     ed25519.PublicKey
+	PublicKeyHash []byte
+	Client        jsonrpc.RPCClient
 }
 
 // NewAccumulateClient constructs the Accumulate client
@@ -63,6 +70,9 @@ func (c *AccumulateClient) ImportPrivateKey(pk string) (*AccumulateClient, error
 	}
 
 	c.PublicKey = publicKey
+
+	publicKeyHash := sha256.Sum256(c.PublicKey)
+	c.PublicKeyHash = publicKeyHash[:]
 
 	return c, nil
 

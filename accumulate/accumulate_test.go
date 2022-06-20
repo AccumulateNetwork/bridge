@@ -16,11 +16,13 @@ func TestImportPrivateKey(t *testing.T) {
 	wantPublicKeyBytes, err := hex.DecodeString(wantPublicKey)
 	assert.NoError(t, err)
 
+	wantPublicKeyHash := sha256.Sum256(wantPublicKeyBytes)
+
 	c := &AccumulateClient{}
 
 	c, err = c.ImportPrivateKey(testPrivKey)
 	assert.NoError(t, err)
 
-	assert.Equal(t, sha256.Sum256(wantPublicKeyBytes), sha256.Sum256(c.PublicKey))
+	assert.Equal(t, wantPublicKeyHash[:], c.PublicKeyHash)
 
 }
