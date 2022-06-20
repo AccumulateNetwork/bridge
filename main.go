@@ -50,6 +50,7 @@ func start(configFile string) {
 
 		fmt.Println("Using config:", configFile)
 
+		// init config
 		if conf, err = config.NewConfig(configFile); err != nil {
 			log.Fatal(err)
 		}
@@ -76,13 +77,13 @@ func start(configFile string) {
 			log.Fatal(err)
 		}
 
+		// init accumulate client
 		fmt.Printf("Accumulate public key hash: %x\n", a.PublicKeyHash)
 		fmt.Println("Accumulate API:", a.API)
 
-		die := make(chan bool)
-		leaderDataAccount := conf.ACME.BridgeADI + accumulate.ACC_LEADER
-		go getLeader(a, leaderDataAccount, die)
-
+		// parse token list from Accumulate
+		// only once – when node is started
+		// token list is mandatory, so return fatal error in case of error
 		fmt.Println("Getting Accumulate tokens...")
 		for _, item := range conf.ACME.Tokens {
 			fmt.Println("Trying to get:", item)
@@ -94,7 +95,12 @@ func start(configFile string) {
 			fmt.Println(token.Data)
 		}
 
-		// Init Accumulate Bridge API
+		// init interval go routines
+		die := make(chan bool)
+		leaderDataAccount := conf.ACME.BridgeADI + accumulate.ACC_LEADER
+		go getLeader(a, leaderDataAccount, die) // every minute
+
+		// init Accumulate Bridge API
 		fmt.Println("Starting Accumulate Bridge API...")
 		log.Fatal(http.ListenAndServe(":"+strconv.Itoa(conf.App.APIPort), nil))
 
@@ -102,6 +108,7 @@ func start(configFile string) {
 
 }
 
+// getLeader parses current leader's public key hash from Accumulate data account and compares it with Accumulate key in the config to find out if this node is a leader or not
 func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die chan bool) {
 
 	var err error
@@ -125,9 +132,12 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 				}
 				if bytes.Equal(decodedLeader, a.PublicKeyHash) {
 					if !isLeader {
+						// print this message only on the first run or when node becomes leader
 						fmt.Println("[leader] THIS NODE IS LEADER")
 					}
 					isLeader = true
+				} else {
+					isLeader = false
 				}
 			}
 
