@@ -5,6 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/AccumulateNetwork/bridge/config"
 	"github.com/ybbus/jsonrpc/v3"
@@ -34,7 +36,14 @@ func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 	}
 
 	c.API = conf.ACME.Node
-	c.Client = jsonrpc.NewClient(conf.ACME.Node)
+
+	// 5 seconds timeout
+	opts := &jsonrpc.RPCClientOpts{}
+	opts.HTTPClient = &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	c.Client = jsonrpc.NewClientWithOpts(conf.ACME.Node, opts)
 
 	if conf.ACME.KeyBook == "" {
 		return nil, fmt.Errorf("received empty keyBook from config: %s", conf.ACME.KeyBook)
