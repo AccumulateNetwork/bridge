@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os/user"
 	"strconv"
+	"time"
 
 	"github.com/AccumulateNetwork/bridge/accumulate"
 	"github.com/AccumulateNetwork/bridge/config"
@@ -16,6 +17,8 @@ import (
 
 	"github.com/labstack/gommon/log"
 )
+
+var isLeader bool
 
 func main() {
 
@@ -76,22 +79,9 @@ func start(configFile string) {
 		fmt.Printf("Accumulate public key hash: %x\n", a.PublicKeyHash)
 		fmt.Println("Accumulate API:", a.API)
 
-		fmt.Println("Getting bridge leader...")
+		die := make(chan bool)
 		leaderDataAccount := conf.ACME.BridgeADI + accumulate.ACC_LEADER
-		fmt.Println("Trying to get:", leaderDataAccount)
-		leaderData := &accumulate.QueryDataResponse{}
-		leaderData, err = a.QueryLatestDataEntry(&accumulate.URLRequest{URL: leaderDataAccount})
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("Bridge leader is", leaderData.Data.Entry.Data[0])
-		decodedLeader, err := hex.DecodeString(leaderData.Data.Entry.Data[0])
-		if err != nil {
-			log.Fatal(err)
-		}
-		if bytes.Equal(decodedLeader, a.PublicKeyHash) {
-			fmt.Println("IT IS LEADER NODE")
-		}
+		go getLeader(a, leaderDataAccount, die)
 
 		fmt.Println("Getting Accumulate tokens...")
 		for _, item := range conf.ACME.Tokens {
@@ -107,6 +97,46 @@ func start(configFile string) {
 		// Init Accumulate Bridge API
 		fmt.Println("Starting Accumulate Bridge API...")
 		log.Fatal(http.ListenAndServe(":"+strconv.Itoa(conf.App.APIPort), nil))
+
+	}
+
+}
+
+func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die chan bool) {
+
+	var err error
+
+	for {
+
+		select {
+		default:
+
+			leaderData := &accumulate.QueryDataResponse{}
+			leaderData, err = a.QueryLatestDataEntry(&accumulate.URLRequest{URL: leaderDataAccount})
+			if err != nil {
+				fmt.Println("[leader]", err)
+				isLeader = false
+			} else {
+				fmt.Println("[leader] Bridge leader:", leaderData.Data.Entry.Data[0])
+				decodedLeader, err := hex.DecodeString(leaderData.Data.Entry.Data[0])
+				if err != nil {
+					fmt.Println(err)
+					isLeader = false
+				}
+				if bytes.Equal(decodedLeader, a.PublicKeyHash) {
+					if !isLeader {
+						fmt.Println("[leader] THIS NODE IS LEADER")
+					}
+					isLeader = true
+				}
+			}
+
+			// check leader every minute
+			time.Sleep(time.Duration(1) * time.Minute)
+
+		case <-die:
+			return
+		}
 
 	}
 
