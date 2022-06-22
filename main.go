@@ -5,12 +5,11 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"net/http"
 	"os/user"
-	"strconv"
 	"time"
 
 	"github.com/AccumulateNetwork/bridge/accumulate"
+	"github.com/AccumulateNetwork/bridge/api"
 	"github.com/AccumulateNetwork/bridge/config"
 	"github.com/AccumulateNetwork/bridge/evm"
 	"github.com/AccumulateNetwork/bridge/gnosis"
@@ -104,8 +103,8 @@ func start(configFile string) {
 		go getLeader(a, leaderDataAccount, die) // every minute
 
 		// init Accumulate Bridge API
-		fmt.Println("Starting Accumulate Bridge API...")
-		log.Fatal(http.ListenAndServe(":"+strconv.Itoa(conf.App.APIPort), nil))
+		fmt.Println("Starting Accumulate Bridge API at port", conf.App.APIPort)
+		log.Fatal(api.StartAPI(conf))
 
 	}
 
