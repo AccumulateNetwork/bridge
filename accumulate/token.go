@@ -1,16 +1,27 @@
 package accumulate
 
-type Tokens struct {
-	Items []*Token `json:"items"`
+type Token struct {
+	URL       string `json:"url"`
+	Symbol    string `json:"symbol"`
+	Precision int64  `json:"precision"`
 }
 
-type Token struct {
-	AccURL  string          `json:"accURL"`
+type TokenEntry struct {
+	URL     string          `json:"url" validate:"required"`
 	Enabled bool            `json:"enabled"`
-	Wrapped []*WrappedToken `json:"wrapped"`
+	Wrapped []*WrappedToken `json:"wrapped" required:"true"`
 }
 
 type WrappedToken struct {
-	Address string `json:"address"`
-	ChainID int64  `json:"chainId"`
+	Address string `json:"address" required:"true,eth_addr"`
+	ChainID int64  `json:"chainId" required:"true,gt=0"`
+}
+
+type TokenList struct {
+	Items []*TokenListItem `json:"items"`
+}
+
+type TokenListItem struct {
+	Token
+	TokenEntry
 }

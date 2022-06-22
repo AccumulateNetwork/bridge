@@ -12,18 +12,14 @@ type Params struct {
 }
 
 type QueryTokenResponse struct {
-	Data struct {
-		URL       string `json:"url"`
-		Symbol    string `json:"symbol"`
-		Precision int64  `json:"precision"`
-	}
+	Data *Token `json:"data"`
 }
 
 type QueryDataResponse struct {
 	Data *DataEntry `json:"data"`
 }
 
-type QueryDataEntriesResponse struct {
+type QueryDataSetResponse struct {
 	Items []*DataEntry `json:"items"`
 }
 
@@ -82,10 +78,10 @@ func (c *AccumulateClient) QueryLatestDataEntry(dataAccount *Params) (*QueryData
 
 }
 
-// QueryDataEntries gets data entries from data account
-func (c *AccumulateClient) QueryDataEntries(dataAccount *Params) (*QueryDataEntriesResponse, error) {
+// QueryDataSet gets data entries from data account
+func (c *AccumulateClient) QueryDataSet(dataAccount *Params) (*QueryDataSetResponse, error) {
 
-	dataEntriesResp := &QueryDataEntriesResponse{}
+	dataEntriesResp := &QueryDataSetResponse{}
 
 	resp, err := c.Client.Call(context.Background(), "query-data-set", &dataAccount)
 	if err != nil {

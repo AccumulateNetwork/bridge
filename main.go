@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
@@ -15,11 +16,12 @@ import (
 	"github.com/AccumulateNetwork/bridge/evm"
 	"github.com/AccumulateNetwork/bridge/gnosis"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/gommon/log"
 )
 
 var isLeader bool
-var tokens *accumulate.Tokens
+var tokenList accumulate.TokenList
 
 func main() {
 
@@ -85,18 +87,20 @@ func start(configFile string) {
 		// parse token list from Accumulate
 		// only once – when node is started
 		// token list is mandatory, so return fatal error in case of error
-		fmt.Println("Getting Accumulate tokens...")
 		tokensDataAccount := conf.ACME.BridgeADI + "/" + accumulate.ACC_TOKEN_REGISTRY
-		tokens, err := a.QueryDataEntries(&accumulate.Params{URL: tokensDataAccount, Count: 1000, Expand: true})
+		fmt.Println("Getting Accumulate tokens from", tokensDataAccount)
+		tokens, err := a.QueryDataSet(&accumulate.Params{URL: tokensDataAccount, Count: 1000, Expand: true})
 		if err != nil {
 			fmt.Println("unable to get token list from", tokensDataAccount)
 			log.Fatal(err)
 		}
 
-		fmt.Println("Got", len(tokens.Items), "data entries from token registry")
+		fmt.Println("Got", len(tokens.Items), "data entries")
 		for _, item := range tokens.Items {
 			parseToken(a, item)
 		}
+
+		fmt.Println("Found", len(tokenList.Items), "tokens")
 
 		// init interval go routines
 		die := make(chan bool)
@@ -158,6 +162,53 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 // parseToken parses data entry with token information received from data account
 func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 
-	fmt.Println(entry.EntryHash)
+	fmt.Println("Parsing", entry.EntryHash)
+
+	token := &accumulate.TokenEntry{}
+
+	// check version
+	if len(entry.Entry.Data) < 2 {
+		fmt.Println("no extIds found in entry")
+		return
+	}
+	if entry.Entry.Data[1] != accumulate.TOKEN_REGISTRY_VERSION {
+		fmt.Println("entry version is not", accumulate.TOKEN_REGISTRY_VERSION)
+		return
+	}
+
+	// convert entry data to bytes
+	tokenData, err := hex.DecodeString(entry.Entry.Data[0])
+	if err != nil {
+		fmt.Println("can not decode entry data")
+		return
+	}
+
+	// try to unmarshal the entry
+	err = json.Unmarshal(tokenData, token)
+	if err != nil {
+		fmt.Println("unable to unmarshal entry data")
+		return
+	}
+
+	// validate token
+	validate := validator.New()
+	err = validate.Struct(token)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// parse token info from Accumulate
+	t, err := a.QueryToken(&accumulate.Params{URL: token.URL})
+	if err != nil {
+		fmt.Println("can not get token from accumulate api", err)
+		return
+	}
+
+	newItem := &accumulate.TokenListItem{*t.Data, *token}
+
+	tokenList.Items = append(tokenList.Items, newItem)
+
+	return
 
 }
