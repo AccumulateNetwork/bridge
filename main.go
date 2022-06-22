@@ -97,7 +97,7 @@ func start(configFile string) {
 
 		// init interval go routines
 		die := make(chan bool)
-		leaderDataAccount := conf.ACME.BridgeADI + accumulate.ACC_LEADER
+		leaderDataAccount := conf.ACME.BridgeADI + "/" + accumulate.ACC_LEADER
 		go getLeader(a, leaderDataAccount, die) // every minute
 
 		// init Accumulate Bridge API

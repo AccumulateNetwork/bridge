@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"math/big"
@@ -226,7 +228,7 @@ func main() {
 			},
 			{
 				Name:  "acc-sign",
-				Usage: "Signs existing redeem tx",
+				Usage: "Signs existing accumulate tx",
 				Action: func(c *cli.Context) error {
 
 					if c.NArg() != 1 {
@@ -267,6 +269,54 @@ func main() {
 
 				},
 			},
+			{
+				Name:  "token-register",
+				Usage: "Generates accumulate data entry for token register",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{Name: "disable"},
+				},
+				Action: func(c *cli.Context) error {
+
+					if c.NArg() != 3 {
+						printTokenRegisterHelp()
+						return nil
+					}
+
+					accumulateURL := c.Args().Get(0)
+					evmChainIdString := c.Args().Get(1)
+					evmTokenContract := c.Args().Get(2)
+
+					var err error
+
+					evmChainId, err := strconv.Atoi(evmChainIdString)
+					if err != nil {
+						fmt.Print("chainId must be a number")
+						return err
+					}
+
+					token := &accumulate.Token{}
+					token.AccURL = accumulateURL
+					token.Enabled = true
+
+					// parse --disable flag if exists
+					disabled := c.Bool("disable")
+					if disabled == true {
+						token.Enabled = false
+					}
+
+					token.WrappedTokens = append(token.WrappedTokens, &accumulate.WrappedToken{Address: evmTokenContract, ChainID: int64(evmChainId)})
+
+					tokenBytes, err := json.Marshal(token)
+					if err != nil {
+						fmt.Print(err)
+					}
+
+					fmt.Print(hex.EncodeToString(tokenBytes))
+
+					return nil
+
+				},
+			},
 		},
 	}
 
@@ -294,4 +344,8 @@ func printRedeemHelp() {
 
 func printAccSignHelp() {
 	fmt.Println("acc-sign [txid]")
+}
+
+func printTokenRegisterHelp() {
+	fmt.Println("token-register [accumulate token URL] [evm chain id] [evm token contract address] [--disable (optional)]")
 }

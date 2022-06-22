@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	ACC_LEADER         = "/leader"   // data account: current leader (pubkeyhash)
-	ACC_TOKEN_REGISTRY = "/registry" // data account: token registry (accumulate token address, evm token address, evm chainid)
+	ACC_LEADER         = "leader" // data account: current leader (pubkeyhash)
+	ACC_TOKEN_REGISTRY = "tokens" // data account: token registry (accumulate token address, evm token address, evm chainid)
 )
 
 type AccumulateClient struct {
