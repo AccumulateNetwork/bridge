@@ -6,9 +6,6 @@ acme:
 #  bridgeadi: ""
 #  keybook: ""
 #  privatekey: ""
-#  tokens:
-#  - "acme"
-#  - "adi1.acme/test"
 evm:
 #  node: ""
 #  chainid: 1
