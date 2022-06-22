@@ -5,6 +5,20 @@ import (
 	"fmt"
 )
 
+type Token struct {
+	URL       string `json:"url"`
+	Symbol    string `json:"symbol"`
+	Precision int64  `json:"precision"`
+}
+
+type DataEntry struct {
+	EntryHash string `json:"entryHash"`
+	Entry     struct {
+		Type string   `json:"type"`
+		Data []string `json:"data"`
+	}
+}
+
 type Params struct {
 	URL    string `json:"url"`
 	Count  int64  `json:"count"`
@@ -21,14 +35,6 @@ type QueryDataResponse struct {
 
 type QueryDataSetResponse struct {
 	Items []*DataEntry `json:"items"`
-}
-
-type DataEntry struct {
-	EntryHash string `json:"entryHash"`
-	Entry     struct {
-		Type string   `json:"type"`
-		Data []string `json:"data"`
-	}
 }
 
 // QueryToken gets Token info

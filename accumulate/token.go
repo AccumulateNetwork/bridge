@@ -1,11 +1,5 @@
 package accumulate
 
-type Token struct {
-	URL       string `json:"url"`
-	Symbol    string `json:"symbol"`
-	Precision int64  `json:"precision"`
-}
-
 type TokenEntry struct {
 	URL     string          `json:"url" validate:"required"`
 	Enabled bool            `json:"enabled"`
