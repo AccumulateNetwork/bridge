@@ -102,6 +102,10 @@ func start(configFile string) {
 
 		fmt.Println("Found", len(tokenList.Items), "tokens")
 
+		if len(tokenList.Items) == 0 {
+			log.Fatal("can not operate without tokens, shutting down")
+		}
+
 		// init interval go routines
 		die := make(chan bool)
 		leaderDataAccount := conf.ACME.BridgeADI + "/" + accumulate.ACC_LEADER
@@ -168,16 +172,22 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 
 	// check version
 	if len(entry.Entry.Data) < 2 {
-		fmt.Println("no extIds found in entry")
+		fmt.Println("looking for at least 2 data fields in entry, found", len(entry.Entry.Data))
 		return
 	}
-	if entry.Entry.Data[1] != accumulate.TOKEN_REGISTRY_VERSION {
+
+	version, err := hex.DecodeString(entry.Entry.Data[0])
+	if err != nil {
+		fmt.Println("can not decode entry data")
+	}
+
+	if !bytes.Equal(version, []byte(accumulate.TOKEN_REGISTRY_VERSION)) {
 		fmt.Println("entry version is not", accumulate.TOKEN_REGISTRY_VERSION)
 		return
 	}
 
 	// convert entry data to bytes
-	tokenData, err := hex.DecodeString(entry.Entry.Data[0])
+	tokenData, err := hex.DecodeString(entry.Entry.Data[1])
 	if err != nil {
 		fmt.Println("can not decode entry data")
 		return
@@ -208,7 +218,5 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 	newItem := &accumulate.TokenListItem{*t.Data, *token}
 
 	tokenList.Items = append(tokenList.Items, newItem)
-
-	return
 
 }
