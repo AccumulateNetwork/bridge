@@ -19,6 +19,7 @@ import (
 )
 
 var isLeader bool
+var tokens *accumulate.Tokens
 
 func main() {
 
@@ -85,14 +86,16 @@ func start(configFile string) {
 		// only once – when node is started
 		// token list is mandatory, so return fatal error in case of error
 		fmt.Println("Getting Accumulate tokens...")
-		for _, item := range conf.ACME.Tokens {
-			fmt.Println("Trying to get:", item)
-			token := &accumulate.QueryTokenResponse{}
-			token, err = a.QueryToken(&accumulate.URLRequest{URL: item})
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Println(token.Data)
+		tokensDataAccount := conf.ACME.BridgeADI + "/" + accumulate.ACC_TOKEN_REGISTRY
+		tokens, err := a.QueryDataEntries(&accumulate.Params{URL: tokensDataAccount, Count: 1000, Expand: true})
+		if err != nil {
+			fmt.Println("unable to get token list from", tokensDataAccount)
+			log.Fatal(err)
+		}
+
+		fmt.Println("Got", len(tokens.Items), "data entries from token registry")
+		for _, item := range tokens.Items {
+			parseToken(a, item)
 		}
 
 		// init interval go routines
@@ -119,7 +122,7 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 		default:
 
 			leaderData := &accumulate.QueryDataResponse{}
-			leaderData, err = a.QueryLatestDataEntry(&accumulate.URLRequest{URL: leaderDataAccount})
+			leaderData, err = a.QueryLatestDataEntry(&accumulate.Params{URL: leaderDataAccount})
 			if err != nil {
 				fmt.Println("[leader]", err)
 				isLeader = false
@@ -149,5 +152,12 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 		}
 
 	}
+
+}
+
+// parseToken parses data entry with token information received from data account
+func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
+
+	fmt.Println(entry.EntryHash)
 
 }

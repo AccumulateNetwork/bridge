@@ -5,8 +5,10 @@ import (
 	"fmt"
 )
 
-type URLRequest struct {
-	URL string `json:"url"`
+type Params struct {
+	URL    string `json:"url"`
+	Count  int64  `json:"count"`
+	Expand bool   `json:"expand"`
 }
 
 type QueryTokenResponse struct {
@@ -18,17 +20,23 @@ type QueryTokenResponse struct {
 }
 
 type QueryDataResponse struct {
-	Data struct {
-		EntryHash string `json:"entryHash"`
-		Entry     struct {
-			Type string   `json:"type"`
-			Data []string `json:"data"`
-		}
+	Data *DataEntry `json:"data"`
+}
+
+type QueryDataEntriesResponse struct {
+	Items []*DataEntry `json:"items"`
+}
+
+type DataEntry struct {
+	EntryHash string `json:"entryHash"`
+	Entry     struct {
+		Type string   `json:"type"`
+		Data []string `json:"data"`
 	}
 }
 
 // QueryToken gets Token info
-func (c *AccumulateClient) QueryToken(token *URLRequest) (*QueryTokenResponse, error) {
+func (c *AccumulateClient) QueryToken(token *Params) (*QueryTokenResponse, error) {
 
 	tokenResp := &QueryTokenResponse{}
 
@@ -51,7 +59,7 @@ func (c *AccumulateClient) QueryToken(token *URLRequest) (*QueryTokenResponse, e
 }
 
 // QueryData gets Token info
-func (c *AccumulateClient) QueryLatestDataEntry(dataAccount *URLRequest) (*QueryDataResponse, error) {
+func (c *AccumulateClient) QueryLatestDataEntry(dataAccount *Params) (*QueryDataResponse, error) {
 
 	dataResp := &QueryDataResponse{}
 
@@ -71,5 +79,29 @@ func (c *AccumulateClient) QueryLatestDataEntry(dataAccount *URLRequest) (*Query
 	}
 
 	return dataResp, nil
+
+}
+
+// QueryDataEntries gets data entries from data account
+func (c *AccumulateClient) QueryDataEntries(dataAccount *Params) (*QueryDataEntriesResponse, error) {
+
+	dataEntriesResp := &QueryDataEntriesResponse{}
+
+	resp, err := c.Client.Call(context.Background(), "query-data-set", &dataAccount)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	err = resp.GetObject(dataEntriesResp)
+	if err != nil {
+		fmt.Println(err)
+		return nil, fmt.Errorf("can not unmarshal api response")
+	}
+
+	return dataEntriesResp, nil
 
 }
