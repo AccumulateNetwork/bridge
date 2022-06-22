@@ -1,4 +1,4 @@
-package api
+package main
 
 import (
 	"testing"
@@ -6,5 +6,5 @@ import (
 
 func TestApis(t *testing.T) {
 
-	api()
+	main()
 }
