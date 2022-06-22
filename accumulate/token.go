@@ -1,9 +1,13 @@
 package accumulate
 
+type Tokens struct {
+	Items []*Token `json:"items"`
+}
+
 type Token struct {
-	AccURL        string `json:"accURL"`
-	Enabled       bool   `json:"enabled"`
-	WrappedTokens []*WrappedToken
+	AccURL  string          `json:"accURL"`
+	Enabled bool            `json:"enabled"`
+	Wrapped []*WrappedToken `json:"wrapped"`
 }
 
 type WrappedToken struct {
