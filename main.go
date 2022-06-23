@@ -122,15 +122,12 @@ func start(configFile string) {
 // getLeader parses current leader's public key hash from Accumulate data account and compares it with Accumulate key in the config to find out if this node is a leader or not
 func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die chan bool) {
 
-	var err error
-
 	for {
 
 		select {
 		default:
 
-			leaderData := &accumulate.QueryDataResponse{}
-			leaderData, err = a.QueryLatestDataEntry(&accumulate.Params{URL: leaderDataAccount})
+			leaderData, err := a.QueryLatestDataEntry(&accumulate.Params{URL: leaderDataAccount})
 			if err != nil {
 				fmt.Println("[leader]", err)
 				isLeader = false
@@ -172,37 +169,37 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 
 	// check version
 	if len(entry.Entry.Data) < 2 {
-		fmt.Println("looking for at least 2 data fields in entry, found", len(entry.Entry.Data))
+		log.Error("looking for at least 2 data fields in entry, found", len(entry.Entry.Data))
 		return
 	}
 
 	version, err := hex.DecodeString(entry.Entry.Data[0])
 	if err != nil {
-		fmt.Println("can not decode entry data")
+		log.Error("can not decode entry data")
 	}
 
 	if !bytes.Equal(version, []byte(accumulate.TOKEN_REGISTRY_VERSION)) {
-		fmt.Println("entry version is not", accumulate.TOKEN_REGISTRY_VERSION)
+		log.Error("entry version is not", accumulate.TOKEN_REGISTRY_VERSION)
 		return
 	}
 
 	// convert entry data to bytes
 	tokenData, err := hex.DecodeString(entry.Entry.Data[1])
 	if err != nil {
-		fmt.Println("can not decode entry data")
+		log.Error("can not decode entry data")
 		return
 	}
 
 	// try to unmarshal the entry
 	err = json.Unmarshal(tokenData, token)
 	if err != nil {
-		fmt.Println("unable to unmarshal entry data")
+		log.Error("unable to unmarshal entry data")
 		return
 	}
 
 	// if entry is disabled, skip
 	if !token.Enabled {
-		fmt.Println("token is disabled")
+		log.Error("token is disabled")
 		return
 	}
 
@@ -210,14 +207,14 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 	validate := validator.New()
 	err = validate.Struct(token)
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return
 	}
 
 	for _, wrappedToken := range token.Wrapped {
 		err = validate.Struct(wrappedToken)
 		if err != nil {
-			fmt.Println(err)
+			log.Error(err)
 			return
 		}
 	}
@@ -225,12 +222,15 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 	// parse token info from Accumulate
 	t, err := a.QueryToken(&accumulate.Params{URL: token.URL})
 	if err != nil {
-		fmt.Println("can not get token from accumulate api", err)
+		log.Error("can not get token from accumulate api", err)
 		return
 	}
 
-	newItem := &accumulate.TokenListItem{*t.Data, *token}
+	token.Symbol = t.Data.Symbol
+	token.Precision = t.Data.Precision
 
-	tokenList.Items = append(tokenList.Items, newItem)
+	fmt.Println(token)
+
+	tokenList.Items = append(tokenList.Items, token)
 
 }
