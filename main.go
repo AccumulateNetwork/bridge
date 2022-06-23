@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os/user"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AccumulateNetwork/bridge/accumulate"
@@ -95,12 +96,12 @@ func start(configFile string) {
 			log.Fatal(err)
 		}
 
-		fmt.Println("Got", len(tokens.Items), "data entries")
+		fmt.Println("Got", len(tokens.Items), "data entry(s)")
 		for _, item := range tokens.Items {
 			parseToken(a, item)
 		}
 
-		fmt.Println("Found", len(tokenList.Items), "tokens")
+		fmt.Println("Found", len(tokenList.Items), "token(s)")
 
 		if len(tokenList.Items) == 0 {
 			log.Fatal("can not operate without tokens, shutting down")
@@ -169,7 +170,7 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 
 	// check version
 	if len(entry.Entry.Data) < 2 {
-		log.Error("looking for at least 2 data fields in entry, found", len(entry.Entry.Data))
+		log.Error("looking for at least 2 data fields in entry, found ", len(entry.Entry.Data))
 		return
 	}
 
@@ -179,7 +180,7 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 	}
 
 	if !bytes.Equal(version, []byte(accumulate.TOKEN_REGISTRY_VERSION)) {
-		log.Error("entry version is not", accumulate.TOKEN_REGISTRY_VERSION)
+		log.Error("entry version is not ", accumulate.TOKEN_REGISTRY_VERSION)
 		return
 	}
 
@@ -222,15 +223,28 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 	// parse token info from Accumulate
 	t, err := a.QueryToken(&accumulate.Params{URL: token.URL})
 	if err != nil {
-		log.Error("can not get token from accumulate api", err)
+		log.Error("can not get token from accumulate api ", err)
 		return
 	}
 
 	token.Symbol = t.Data.Symbol
 	token.Precision = t.Data.Precision
 
-	fmt.Println(token)
+	duplicateIndex := -1
 
-	tokenList.Items = append(tokenList.Items, token)
+	// check for duplicates, if found override
+	for i, item := range tokenList.Items {
+		if strings.EqualFold(item.URL, token.URL) {
+			log.Info("duplicate token ", token.URL, ", overrided")
+			duplicateIndex = i
+			tokenList.Items[i] = token
+		}
+	}
+
+	// if not found, append new token
+	if duplicateIndex == -1 {
+		fmt.Println("Added token:", token.URL)
+		tokenList.Items = append(tokenList.Items, token)
+	}
 
 }
