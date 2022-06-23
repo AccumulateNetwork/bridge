@@ -2,9 +2,13 @@ package api
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestApis(t *testing.T) {
+func TestNewAPI(t *testing.T) {
 
-	api()
+	var err error
+	assert.NoError(t, err)
+
 }

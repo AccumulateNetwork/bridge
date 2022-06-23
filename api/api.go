@@ -2,36 +2,43 @@ package api
 
 import (
 	"context"
+	"log"
+	"os"
+	"os/signal"
+	"strconv"
 
+	"github.com/AccumulateNetwork/bridge/config"
 	"go.neonxp.dev/jsonrpc2/rpc"
-	"go.neonxp.dev/jsonrpc2/rpc/middleware"
 	"go.neonxp.dev/jsonrpc2/transport"
 )
 
-func api() {
+func StartAPI(conf *config.Config) error {
+
 	s := rpc.New(
-		rpc.WithLogger(rpc.StdLogger),                     // Optional logger
-		rpc.WithTransport(&transport.HTTP{Bind: ":8000"}), // HTTP transport
+		rpc.WithTransport(&transport.HTTP{Bind: ":" + strconv.Itoa(conf.App.APIPort), CORSOrigin: "*"}), // HTTP transport
 	)
 
-	s.Use(
-		rpc.WithTransport(&transport.TCP{Bind: ":3000"}),     // TCP transport
-		rpc.WithMiddleware(middleware.Logger(rpc.StdLogger)), // Logger middleware
-	)
-	s.Register("multiply", rpc.H(Multiply))
-	s.Run(context.Background())
+	s.Register("fees", rpc.H(Fees))
+
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	defer cancel()
+
+	if err := s.Run(ctx); err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
 }
 
-func Multiply(ctx context.Context, args *Args) (int, error) {
-	return args.A * args.B, nil
+func Fees(ctx context.Context, _ *NoArgs) (*BridgeFees, error) {
+	return &BridgeFees{}, nil
 }
 
-type Args struct {
-	A int `json:"a"`
-	B int `json:"b"`
+type BridgeFees struct {
+	MintFee int64 `json:"mintFee"`
+	EVMFee  int64 `json:"evmFee"`
+	BurnFee int64 `json:"burnFee"`
 }
 
-type Quotient struct {
-	Quo int `json:"quo"`
-	Rem int `json:"rem"`
+type NoArgs struct {
 }
