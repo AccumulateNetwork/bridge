@@ -200,12 +200,26 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 		return
 	}
 
+	// if entry is disabled, skip
+	if !token.Enabled {
+		fmt.Println("token is disabled")
+		return
+	}
+
 	// validate token
 	validate := validator.New()
 	err = validate.Struct(token)
 	if err != nil {
 		fmt.Println(err)
 		return
+	}
+
+	for _, wrappedToken := range token.Wrapped {
+		err = validate.Struct(wrappedToken)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 	}
 
 	// parse token info from Accumulate
