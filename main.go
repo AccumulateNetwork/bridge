@@ -3,11 +3,13 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
 	"os/user"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AccumulateNetwork/bridge/accumulate"
@@ -15,11 +17,12 @@ import (
 	"github.com/AccumulateNetwork/bridge/evm"
 	"github.com/AccumulateNetwork/bridge/gnosis"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/gommon/log"
 )
 
 var isLeader bool
-var tokens *accumulate.Tokens
+var tokenList accumulate.TokenList
 
 func main() {
 
@@ -85,17 +88,23 @@ func start(configFile string) {
 		// parse token list from Accumulate
 		// only once – when node is started
 		// token list is mandatory, so return fatal error in case of error
-		fmt.Println("Getting Accumulate tokens...")
 		tokensDataAccount := conf.ACME.BridgeADI + "/" + accumulate.ACC_TOKEN_REGISTRY
-		tokens, err := a.QueryDataEntries(&accumulate.Params{URL: tokensDataAccount, Count: 1000, Expand: true})
+		fmt.Println("Getting Accumulate tokens from", tokensDataAccount)
+		tokens, err := a.QueryDataSet(&accumulate.Params{URL: tokensDataAccount, Count: 1000, Expand: true})
 		if err != nil {
 			fmt.Println("unable to get token list from", tokensDataAccount)
 			log.Fatal(err)
 		}
 
-		fmt.Println("Got", len(tokens.Items), "data entries from token registry")
+		fmt.Println("Got", len(tokens.Items), "data entry(s)")
 		for _, item := range tokens.Items {
 			parseToken(a, item)
+		}
+
+		fmt.Println("Found", len(tokenList.Items), "token(s)")
+
+		if len(tokenList.Items) == 0 {
+			log.Fatal("can not operate without tokens, shutting down")
 		}
 
 		// init interval go routines
@@ -114,15 +123,12 @@ func start(configFile string) {
 // getLeader parses current leader's public key hash from Accumulate data account and compares it with Accumulate key in the config to find out if this node is a leader or not
 func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die chan bool) {
 
-	var err error
-
 	for {
 
 		select {
 		default:
 
-			leaderData := &accumulate.QueryDataResponse{}
-			leaderData, err = a.QueryLatestDataEntry(&accumulate.Params{URL: leaderDataAccount})
+			leaderData, err := a.QueryLatestDataEntry(&accumulate.Params{URL: leaderDataAccount})
 			if err != nil {
 				fmt.Println("[leader]", err)
 				isLeader = false
@@ -158,6 +164,88 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 // parseToken parses data entry with token information received from data account
 func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 
-	fmt.Println(entry.EntryHash)
+	fmt.Println("Parsing", entry.EntryHash)
+
+	token := &accumulate.TokenEntry{}
+
+	// check version
+	if len(entry.Entry.Data) < 2 {
+		log.Error("looking for at least 2 data fields in entry, found ", len(entry.Entry.Data))
+		return
+	}
+
+	version, err := hex.DecodeString(entry.Entry.Data[0])
+	if err != nil {
+		log.Error("can not decode entry data")
+		return
+	}
+
+	if !bytes.Equal(version, []byte(accumulate.TOKEN_REGISTRY_VERSION)) {
+		log.Error("entry version is not ", accumulate.TOKEN_REGISTRY_VERSION)
+		return
+	}
+
+	// convert entry data to bytes
+	tokenData, err := hex.DecodeString(entry.Entry.Data[1])
+	if err != nil {
+		log.Error("can not decode entry data")
+		return
+	}
+
+	// try to unmarshal the entry
+	err = json.Unmarshal(tokenData, token)
+	if err != nil {
+		log.Error("unable to unmarshal entry data")
+		return
+	}
+
+	// if entry is disabled, skip
+	if !token.Enabled {
+		log.Error("token is disabled")
+		return
+	}
+
+	// validate token
+	validate := validator.New()
+	err = validate.Struct(token)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	for _, wrappedToken := range token.Wrapped {
+		err = validate.Struct(wrappedToken)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// parse token info from Accumulate
+	t, err := a.QueryToken(&accumulate.Params{URL: token.URL})
+	if err != nil {
+		log.Error("can not get token from accumulate api ", err)
+		return
+	}
+
+	token.Symbol = t.Data.Symbol
+	token.Precision = t.Data.Precision
+
+	duplicateIndex := -1
+
+	// check for duplicates, if found override
+	for i, item := range tokenList.Items {
+		if strings.EqualFold(item.URL, token.URL) {
+			log.Info("duplicate token ", token.URL, ", overriden")
+			duplicateIndex = i
+			tokenList.Items[i] = token
+		}
+	}
+
+	// if not found, append new token
+	if duplicateIndex == -1 {
+		fmt.Println("Added token:", token.URL)
+		tokenList.Items = append(tokenList.Items, token)
+	}
 
 }

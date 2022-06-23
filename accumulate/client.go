@@ -5,26 +5,10 @@ import (
 	"fmt"
 )
 
-type Params struct {
-	URL    string `json:"url"`
-	Count  int64  `json:"count"`
-	Expand bool   `json:"expand"`
-}
-
-type QueryTokenResponse struct {
-	Data struct {
-		URL       string `json:"url"`
-		Symbol    string `json:"symbol"`
-		Precision int64  `json:"precision"`
-	}
-}
-
-type QueryDataResponse struct {
-	Data *DataEntry `json:"data"`
-}
-
-type QueryDataEntriesResponse struct {
-	Items []*DataEntry `json:"items"`
+type Token struct {
+	URL       string `json:"url"`
+	Symbol    string `json:"symbol"`
+	Precision int64  `json:"precision"`
 }
 
 type DataEntry struct {
@@ -33,6 +17,24 @@ type DataEntry struct {
 		Type string   `json:"type"`
 		Data []string `json:"data"`
 	}
+}
+
+type Params struct {
+	URL    string `json:"url"`
+	Count  int64  `json:"count"`
+	Expand bool   `json:"expand"`
+}
+
+type QueryTokenResponse struct {
+	Data *Token `json:"data"`
+}
+
+type QueryDataResponse struct {
+	Data *DataEntry `json:"data"`
+}
+
+type QueryDataSetResponse struct {
+	Items []*DataEntry `json:"items"`
 }
 
 // QueryToken gets Token info
@@ -82,10 +84,10 @@ func (c *AccumulateClient) QueryLatestDataEntry(dataAccount *Params) (*QueryData
 
 }
 
-// QueryDataEntries gets data entries from data account
-func (c *AccumulateClient) QueryDataEntries(dataAccount *Params) (*QueryDataEntriesResponse, error) {
+// QueryDataSet gets data entries from data account
+func (c *AccumulateClient) QueryDataSet(dataAccount *Params) (*QueryDataSetResponse, error) {
 
-	dataEntriesResp := &QueryDataEntriesResponse{}
+	dataEntriesResp := &QueryDataSetResponse{}
 
 	resp, err := c.Client.Call(context.Background(), "query-data-set", &dataAccount)
 	if err != nil {

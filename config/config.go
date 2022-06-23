@@ -16,11 +16,10 @@ type Config struct {
 		LogLevel int `required:"true" default:"4" json:"logLevel" form:"logLevel" query:"logLevel"`
 	}
 	ACME struct {
-		Node       string   `required:"true" default:"" json:"node" form:"node" query:"node"`
-		BridgeADI  string   `required:"true" default:"" json:"bridgeADI" form:"bridgeADI" query:"bridgeADI"`
-		KeyBook    string   `required:"true" default:"" json:"keyBook" form:"keyBook" query:"keyBook"`
-		PrivateKey string   `required:"true" default:"" json:"privateKey" form:"privateKey" query:"privateKey"`
-		Tokens     []string `required:"true" default:"" json:"tokens" form:"tokens" query:"tokens"`
+		Node       string `required:"true" default:"" json:"node" form:"node" query:"node"`
+		BridgeADI  string `required:"true" default:"" json:"bridgeADI" form:"bridgeADI" query:"bridgeADI"`
+		KeyBook    string `required:"true" default:"" json:"keyBook" form:"keyBook" query:"keyBook"`
+		PrivateKey string `required:"true" default:"" json:"privateKey" form:"privateKey" query:"privateKey"`
 	}
 	EVM struct {
 		Node                string `required:"false" default:"" json:"node" form:"node" query:"node"`
@@ -33,17 +32,6 @@ type Config struct {
 		MaxGasFee           int    `required:"true" default:"30" json:"maxGasFee" form:"maxGasFee" query:"maxGasFee"`
 	}
 }
-
-/*
-type Token struct {
-	AccTokenAddress string `required:"true" default:"" json:"accTokenAddress" form:"accTokenAddress" query:"accTokenAddress"`
-	EVMTokenAddress string `required:"true" default:"" json:"evmTokenAddress" form:"evmTokenAddress" query:"evmTokenAddress"`
-	AccSymbol       string
-	EVMSymbol       string
-	AccDecimals     int64
-	EVMDecimals     int64
-}
-*/
 
 // Create config from configFile
 func NewConfig(configFile string) (*Config, error) {

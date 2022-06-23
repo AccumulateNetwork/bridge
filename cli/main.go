@@ -294,13 +294,13 @@ func main() {
 						return err
 					}
 
-					token := &accumulate.Token{}
-					token.AccURL = accumulateURL
+					token := &accumulate.TokenEntry{}
+					token.URL = accumulateURL
 					token.Enabled = true
 
 					// parse --disable flag if exists
 					disabled := c.Bool("disable")
-					if disabled == true {
+					if disabled {
 						token.Enabled = false
 					}
 
@@ -311,7 +311,8 @@ func main() {
 						fmt.Print(err)
 					}
 
-					fmt.Print(hex.EncodeToString(tokenBytes))
+					fmt.Println(hex.EncodeToString([]byte(accumulate.TOKEN_REGISTRY_VERSION)))
+					fmt.Println(hex.EncodeToString(tokenBytes))
 
 					return nil
 
