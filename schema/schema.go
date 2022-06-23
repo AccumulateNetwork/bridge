@@ -3,8 +3,19 @@ package schema
 // BridgeFees schema
 type BridgeFees struct {
 	MintFee int64 `json:"mintFee"`
-	EVMFee  int64 `json:"evmFee"`
 	BurnFee int64 `json:"burnFee"`
+	EVMFee  int64 `json:"evmFee"`
+}
+
+type BridgeFeesEntry struct {
+	MintFee int64     `json:"mintFee"`
+	BurnFee int64     `json:"burnFee"`
+	EVMFees []*EVMFee `json:"evmFees"`
+}
+
+type EVMFee struct {
+	EVMFee  int64 `json:"evmFee"`
+	ChainID int64 `json:"chainId"`
 }
 
 // TokenEntry is token registry item schema

@@ -8,10 +8,13 @@ import (
 	"strconv"
 
 	"github.com/AccumulateNetwork/bridge/config"
+	"github.com/AccumulateNetwork/bridge/global"
 	"github.com/AccumulateNetwork/bridge/schema"
 	"go.neonxp.dev/jsonrpc2/rpc"
 	"go.neonxp.dev/jsonrpc2/transport"
 )
+
+var bridgeFees schema.BridgeFees
 
 func StartAPI(conf *config.Config) error {
 
@@ -32,7 +35,7 @@ func StartAPI(conf *config.Config) error {
 }
 
 func Fees(ctx context.Context, _ *NoArgs) (*schema.BridgeFees, error) {
-	return &schema.BridgeFees{}, nil
+	return &global.BridgeFees, nil
 }
 
 type NoArgs struct {
