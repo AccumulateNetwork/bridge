@@ -177,6 +177,7 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 	version, err := hex.DecodeString(entry.Entry.Data[0])
 	if err != nil {
 		log.Error("can not decode entry data")
+		return
 	}
 
 	if !bytes.Equal(version, []byte(accumulate.TOKEN_REGISTRY_VERSION)) {
@@ -235,7 +236,7 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 	// check for duplicates, if found override
 	for i, item := range tokenList.Items {
 		if strings.EqualFold(item.URL, token.URL) {
-			log.Info("duplicate token ", token.URL, ", overrided")
+			log.Info("duplicate token ", token.URL, ", overriden")
 			duplicateIndex = i
 			tokenList.Items[i] = token
 		}
