@@ -14,15 +14,13 @@ import (
 	"github.com/AccumulateNetwork/bridge/api"
 	"github.com/AccumulateNetwork/bridge/config"
 	"github.com/AccumulateNetwork/bridge/evm"
+	"github.com/AccumulateNetwork/bridge/global"
 	"github.com/AccumulateNetwork/bridge/gnosis"
 	"github.com/AccumulateNetwork/bridge/schema"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/gommon/log"
 )
-
-var isLeader bool
-var tokenList schema.TokenList
 
 func main() {
 
@@ -85,6 +83,43 @@ func start(configFile string) {
 		fmt.Printf("Accumulate public key hash: %x\n", a.PublicKeyHash)
 		fmt.Println("Accumulate API:", a.API)
 
+		// parse bridge fees
+		bridgeFeesDataAccount := conf.ACME.BridgeADI + "/" + accumulate.ACC_BRIDGE_FEES
+		fmt.Println("Getting bridge fees from", bridgeFeesDataAccount)
+		fees, err := a.QueryLatestDataEntry(&accumulate.Params{URL: bridgeFeesDataAccount})
+		if err != nil {
+			fmt.Println("unable to get bridge fees from", bridgeFeesDataAccount)
+			log.Fatal(err)
+		}
+
+		feesBytes, err := hex.DecodeString(fees.Data.Entry.Data[0])
+		if err != nil {
+			log.Error("can not decode entry data")
+			log.Fatal(err)
+		}
+
+		allChainsFees := &schema.BridgeFeesEntry{}
+
+		err = json.Unmarshal(feesBytes, &allChainsFees)
+		if err != nil {
+			log.Error("unable to unmarshal entry data")
+			log.Fatal(err)
+		}
+
+		global.BridgeFees.MintFee = allChainsFees.MintFee
+		global.BridgeFees.BurnFee = allChainsFees.BurnFee
+
+		// find evm fee for current evm
+		for _, chain := range allChainsFees.EVMFees {
+			if conf.EVM.ChainId == int(chain.ChainID) {
+				global.BridgeFees.EVMFee = chain.EVMFee
+			}
+		}
+
+		fmt.Printf("Mint fee: %.2f%%\n", float64(global.BridgeFees.MintFee)/1000)
+		fmt.Printf("Burn fee: %.2f%%\n", float64(global.BridgeFees.BurnFee)/1000)
+		fmt.Println("EVM tx fee:", global.BridgeFees.EVMFee)
+
 		// parse token list from Accumulate
 		// only once – when node is started
 		// token list is mandatory, so return fatal error in case of error
@@ -101,9 +136,9 @@ func start(configFile string) {
 			parseToken(a, item)
 		}
 
-		fmt.Println("Found", len(tokenList.Items), "token(s)")
+		fmt.Println("Found", len(global.TokenList.Items), "token(s)")
 
-		if len(tokenList.Items) == 0 {
+		if len(global.TokenList.Items) == 0 {
 			log.Fatal("can not operate without tokens, shutting down")
 		}
 
@@ -131,22 +166,22 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 			leaderData, err := a.QueryLatestDataEntry(&accumulate.Params{URL: leaderDataAccount})
 			if err != nil {
 				fmt.Println("[leader]", err)
-				isLeader = false
+				global.IsLeader = false
 			} else {
 				fmt.Println("[leader] Bridge leader:", leaderData.Data.Entry.Data[0])
 				decodedLeader, err := hex.DecodeString(leaderData.Data.Entry.Data[0])
 				if err != nil {
 					fmt.Println(err)
-					isLeader = false
+					global.IsLeader = false
 				}
 				if bytes.Equal(decodedLeader, a.PublicKeyHash) {
-					if !isLeader {
+					if !global.IsLeader {
 						// print this message only on the first run or when node becomes leader
 						fmt.Println("[leader] THIS NODE IS LEADER")
 					}
-					isLeader = true
+					global.IsLeader = true
 				} else {
-					isLeader = false
+					global.IsLeader = false
 				}
 			}
 
@@ -234,18 +269,18 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 	duplicateIndex := -1
 
 	// check for duplicates, if found override
-	for i, item := range tokenList.Items {
+	for i, item := range global.TokenList.Items {
 		if strings.EqualFold(item.URL, token.URL) {
 			log.Info("duplicate token ", token.URL, ", overriden")
 			duplicateIndex = i
-			tokenList.Items[i] = token
+			global.TokenList.Items[i] = token
 		}
 	}
 
 	// if not found, append new token
 	if duplicateIndex == -1 {
 		fmt.Println("Added token:", token.URL)
-		tokenList.Items = append(tokenList.Items, token)
+		global.TokenList.Items = append(global.TokenList.Items, token)
 	}
 
 }

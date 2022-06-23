@@ -312,8 +312,64 @@ func main() {
 						fmt.Print(err)
 					}
 
-					fmt.Println(hex.EncodeToString([]byte(accumulate.TOKEN_REGISTRY_VERSION)))
 					fmt.Println(hex.EncodeToString(tokenBytes))
+
+					return nil
+
+				},
+			},
+			{
+				Name:  "update-fees",
+				Usage: "Generates accumulate data entry for bridge fees",
+				Action: func(c *cli.Context) error {
+
+					if c.NArg() != 4 {
+						printUpdateFeesHelp()
+						return nil
+					}
+
+					mintFeeString := c.Args().Get(0)
+					burnFeeString := c.Args().Get(1)
+					evmChainIdString := c.Args().Get(2)
+					evmFeeString := c.Args().Get(3)
+
+					var err error
+
+					mintFee, err := strconv.Atoi(mintFeeString)
+					if err != nil {
+						fmt.Print("mintFee must be a number")
+						return err
+					}
+
+					burnFee, err := strconv.Atoi(burnFeeString)
+					if err != nil {
+						fmt.Print("burnFee must be a number")
+						return err
+					}
+
+					evmChainId, err := strconv.Atoi(evmChainIdString)
+					if err != nil {
+						fmt.Print("chainId must be a number")
+						return err
+					}
+
+					evmFee, err := strconv.Atoi(evmFeeString)
+					if err != nil {
+						fmt.Print("evmFee must be a number")
+						return err
+					}
+
+					fees := &schema.BridgeFeesEntry{}
+					fees.BurnFee = int64(burnFee)
+					fees.MintFee = int64(mintFee)
+					fees.EVMFees = append(fees.EVMFees, &schema.EVMFee{EVMFee: int64(evmFee), ChainID: int64(evmChainId)})
+
+					feesBytes, err := json.Marshal(fees)
+					if err != nil {
+						fmt.Print(err)
+					}
+
+					fmt.Println(hex.EncodeToString(feesBytes))
 
 					return nil
 
@@ -350,4 +406,8 @@ func printAccSignHelp() {
 
 func printTokenRegisterHelp() {
 	fmt.Println("token-register [accumulate token URL] [evm chain id] [evm token contract address] [--disable (optional)]")
+}
+
+func printUpdateFeesHelp() {
+	fmt.Println("update-fees [mint fee (bps)] [burn fee (bps)] [evm chain id] [evm tx fee]")
 }
