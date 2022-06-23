@@ -15,13 +15,14 @@ import (
 	"github.com/AccumulateNetwork/bridge/config"
 	"github.com/AccumulateNetwork/bridge/evm"
 	"github.com/AccumulateNetwork/bridge/gnosis"
+	"github.com/AccumulateNetwork/bridge/schema"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/gommon/log"
 )
 
 var isLeader bool
-var tokenList accumulate.TokenList
+var tokenList schema.TokenList
 
 func main() {
 
@@ -165,7 +166,7 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 
 	fmt.Println("Parsing", entry.EntryHash)
 
-	token := &accumulate.TokenEntry{}
+	token := &schema.TokenEntry{}
 
 	// check version
 	if len(entry.Entry.Data) < 2 {

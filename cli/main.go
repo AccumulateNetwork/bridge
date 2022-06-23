@@ -15,6 +15,7 @@ import (
 	"github.com/AccumulateNetwork/bridge/accumulate"
 	"github.com/AccumulateNetwork/bridge/config"
 	"github.com/AccumulateNetwork/bridge/gnosis"
+	"github.com/AccumulateNetwork/bridge/schema"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/urfave/cli/v2" // imports as package "cli"
 )
@@ -294,7 +295,7 @@ func main() {
 						return err
 					}
 
-					token := &accumulate.TokenEntry{}
+					token := &schema.TokenEntry{}
 					token.URL = accumulateURL
 					token.Enabled = true
 
@@ -304,7 +305,7 @@ func main() {
 						token.Enabled = false
 					}
 
-					token.Wrapped = append(token.Wrapped, &accumulate.WrappedToken{Address: evmTokenContract, ChainID: int64(evmChainId)})
+					token.Wrapped = append(token.Wrapped, &schema.WrappedToken{Address: evmTokenContract, ChainID: int64(evmChainId)})
 
 					tokenBytes, err := json.Marshal(token)
 					if err != nil {

@@ -17,8 +17,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/qri-io/jsonpointer v0.1.1 // indirect
-	github.com/qri-io/jsonschema v0.2.1 // indirect
 	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29 // indirect
 )
 
@@ -66,7 +64,7 @@ require (
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/ybbus/jsonrpc/v3 v3.1.0
-	go.neonxp.dev/jsonrpc2 v1.1.3
+	go.neonxp.dev/jsonrpc2 v1.1.1
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
 	golang.org/x/sys v0.0.0-20211103235746-7861aae1554b // indirect
 	golang.org/x/text v0.3.7 // indirect
