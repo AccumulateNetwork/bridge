@@ -48,8 +48,8 @@ func TestCreateSafeMultisigTx(t *testing.T) {
 	req := &GnosisTx{}
 	req.To = g.BridgeAddress
 	req.Data = hexutil.Encode(data)
-	req.GasToken = ZERO_ADDR
-	req.RefundReceiver = ZERO_ADDR
+	req.GasToken = abiutil.ZERO_ADDR
+	req.RefundReceiver = abiutil.ZERO_ADDR
 	req.Nonce = safe.Nonce
 
 	resp, err := g.GetSafe()
