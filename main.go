@@ -67,7 +67,7 @@ func start(configFile string) {
 		fmt.Println("Gnosis API:", g.API)
 
 		// init evm client
-		if e, err = evm.NewEVM(conf); err != nil {
+		if e, err = evm.NewEVMClient(conf); err != nil {
 			log.Fatal(err)
 		}
 

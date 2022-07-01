@@ -45,7 +45,7 @@ func TestCreateSafeMultisigTx(t *testing.T) {
 	assert.NotEmpty(t, data)
 
 	// generate API request
-	req := &RequestGnosisTx{}
+	req := &GnosisTx{}
 	req.To = g.BridgeAddress
 	req.Data = hexutil.Encode(data)
 	req.GasToken = ZERO_ADDR
