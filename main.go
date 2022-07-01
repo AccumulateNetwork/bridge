@@ -67,7 +67,7 @@ func start(configFile string) {
 		fmt.Println("Gnosis API:", g.API)
 
 		// init evm client
-		if e, err = evm.NewEVM(conf); err != nil {
+		if e, err = evm.NewEVMClient(conf); err != nil {
 			log.Fatal(err)
 		}
 
@@ -116,6 +116,9 @@ func start(configFile string) {
 			}
 		}
 
+		// set chainId for tokens
+		global.Tokens.ChainID = int64(conf.EVM.ChainId)
+
 		fmt.Printf("Mint fee: %.2f%%\n", float64(global.BridgeFees.MintFee)/1000)
 		fmt.Printf("Burn fee: %.2f%%\n", float64(global.BridgeFees.BurnFee)/1000)
 		fmt.Println("EVM tx fee:", global.BridgeFees.EVMFee)
@@ -136,9 +139,9 @@ func start(configFile string) {
 			parseToken(a, item)
 		}
 
-		fmt.Println("Found", len(global.TokenList.Items), "token(s)")
+		fmt.Println("Found", len(global.Tokens.Items), "token(s)")
 
-		if len(global.TokenList.Items) == 0 {
+		if len(global.Tokens.Items) == 0 {
 			log.Fatal("can not operate without tokens, shutting down")
 		}
 
@@ -201,7 +204,7 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 
 	fmt.Println("Parsing", entry.EntryHash)
 
-	token := &schema.TokenEntry{}
+	tokenEntry := &schema.TokenEntry{}
 
 	// check version
 	if len(entry.Entry.Data) < 2 {
@@ -228,59 +231,72 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 	}
 
 	// try to unmarshal the entry
-	err = json.Unmarshal(tokenData, token)
+	err = json.Unmarshal(tokenData, tokenEntry)
 	if err != nil {
 		log.Error("unable to unmarshal entry data")
 		return
 	}
 
 	// if entry is disabled, skip
-	if !token.Enabled {
+	if !tokenEntry.Enabled {
 		log.Error("token is disabled")
 		return
 	}
 
 	// validate token
 	validate := validator.New()
-	err = validate.Struct(token)
+	err = validate.Struct(tokenEntry)
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	for _, wrappedToken := range token.Wrapped {
-		err = validate.Struct(wrappedToken)
-		if err != nil {
-			log.Error(err)
-			return
+	token := &schema.Token{}
+
+	for _, wrappedToken := range tokenEntry.Wrapped {
+		// search for current chainid
+		if wrappedToken.ChainID == global.Tokens.ChainID {
+			err = validate.Struct(wrappedToken)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			token.Address = wrappedToken.Address
 		}
 	}
 
+	// if no token address found, error
+	if token.Address == "" {
+		log.Error("can not find token address for chainid ", global.Tokens.ChainID)
+		return
+	}
+
 	// parse token info from Accumulate
-	t, err := a.QueryToken(&accumulate.Params{URL: token.URL})
+	t, err := a.QueryToken(&accumulate.Params{URL: tokenEntry.URL})
 	if err != nil {
 		log.Error("can not get token from accumulate api ", err)
 		return
 	}
 
+	token.URL = t.Data.URL
 	token.Symbol = t.Data.Symbol
 	token.Precision = t.Data.Precision
 
 	duplicateIndex := -1
 
 	// check for duplicates, if found override
-	for i, item := range global.TokenList.Items {
+	for i, item := range global.Tokens.Items {
 		if strings.EqualFold(item.URL, token.URL) {
 			log.Info("duplicate token ", token.URL, ", overriden")
 			duplicateIndex = i
-			global.TokenList.Items[i] = token
+			global.Tokens.Items[i] = token
 		}
 	}
 
 	// if not found, append new token
 	if duplicateIndex == -1 {
 		fmt.Println("Added token:", token.URL)
-		global.TokenList.Items = append(global.TokenList.Items, token)
+		global.Tokens.Items = append(global.Tokens.Items, token)
 	}
 
 }

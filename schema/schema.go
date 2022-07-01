@@ -32,7 +32,16 @@ type WrappedToken struct {
 	ChainID int64  `json:"chainId" validate:"required,gt=0"`
 }
 
-// TokenList is the list of active tokens, used by node
-type TokenList struct {
-	Items []*TokenEntry `json:"items"`
+// Tokens is the list of active tokens, used by API
+type Tokens struct {
+	ChainID int64    `json:"chainId"`
+	Items   []*Token `json:"items"`
+}
+
+// Token is an item of Tokens{}
+type Token struct {
+	URL       string `json:"url"`
+	Symbol    string `json:"symbol"`
+	Precision int64  `json:"precision"`
+	Address   string `json:"address"`
 }

@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	ZERO_ADDR          = "0x0000000000000000000000000000000000000000"
 	GNOSIS_API_MAINNET = "https://safe-transaction.gnosis.io/api/v1/"
 	GNOSIS_API_RINKEBY = "https://safe-transaction.rinkeby.gnosis.io/api/v1/"
 )

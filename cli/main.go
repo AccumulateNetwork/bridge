@@ -14,9 +14,12 @@ import (
 	"github.com/AccumulateNetwork/bridge/abiutil"
 	"github.com/AccumulateNetwork/bridge/accumulate"
 	"github.com/AccumulateNetwork/bridge/config"
+	"github.com/AccumulateNetwork/bridge/evm"
 	"github.com/AccumulateNetwork/bridge/gnosis"
 	"github.com/AccumulateNetwork/bridge/schema"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/urfave/cli/v2" // imports as package "cli"
 )
 
@@ -93,11 +96,11 @@ func main() {
 						return err
 					}
 
-					tx := gnosis.RequestGnosisTx{}
+					tx := gnosis.GnosisTx{}
 					tx.To = g.BridgeAddress
 					tx.Data = hexutil.Encode(data)
-					tx.GasToken = gnosis.ZERO_ADDR
-					tx.RefundReceiver = gnosis.ZERO_ADDR
+					tx.GasToken = abiutil.ZERO_ADDR
+					tx.RefundReceiver = abiutil.ZERO_ADDR
 					tx.Nonce = safe.Nonce
 					tx.ContractTransactionHash = hexutil.Encode(contractHash)
 					tx.Sender = g.PublicKey.Hex()
@@ -173,19 +176,59 @@ func main() {
 						return err
 					}
 
-					fmt.Print(nonce, gasPrice, priorityFee, safe)
+					cl, err := evm.NewEVMClient(conf)
+					if err != nil {
+						fmt.Print("can not init evm client: ")
+						return err
+					}
+
+					// get tx from gnosis
+					gnosisTx, err := g.GetSafeMultisigTx(int(nonce))
+					if err != nil {
+						fmt.Printf("can not get gnosis safe tx with nonce %d: ", nonce)
+						return err
+					}
+
+					chainId := &big.Int{}
+					chainId.SetInt64(int64(cl.ChainId))
+
+					gasFeeCap := &big.Int{}
+					gasFeeCap.SetInt64(gasPrice)
+
+					gasTipCap := &big.Int{}
+					gasTipCap.SetInt64(priorityFee)
+
+					txData, err := abiutil.GenerateGnosisTx(g.SafeAddress, gnosisTx.Data, gnosisTx.Signature)
+					if err != nil {
+						fmt.Print("can not generate tx data: ")
+						return err
+					}
+
+					to := common.HexToAddress(g.SafeAddress)
+
+					tx := types.NewTx(&types.DynamicFeeTx{
+						ChainID:   chainId,
+						Nonce:     uint64(nonce),
+						GasFeeCap: gasFeeCap,
+						GasTipCap: gasTipCap,
+						Gas:       uint64(200000),
+						To:        &to,
+						Data:      txData,
+					})
+
+					fmt.Print(tx, safe)
 
 					return nil
 
 				},
 			},
 			{
-				Name:  "redeem",
-				Usage: "Generates, signs and submits tx to redeem native tokens",
+				Name:  "release",
+				Usage: "Generates, signs and submits tx to release native tokens",
 				Action: func(c *cli.Context) error {
 
 					if c.NArg() != 3 {
-						printRedeemHelp()
+						printReleaseHelp()
 						return nil
 					}
 
@@ -396,8 +439,8 @@ func printEthSubmitHelp() {
 	fmt.Println("eth-submit [gnosis safe tx nonce] [max gwei price] [max priority fee]")
 }
 
-func printRedeemHelp() {
-	fmt.Println("redeem [token] [recipient] [amount]")
+func printReleaseHelp() {
+	fmt.Println("release [token] [recipient] [amount]")
 }
 
 func printAccSignHelp() {

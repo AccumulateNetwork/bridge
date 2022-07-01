@@ -14,8 +14,6 @@ import (
 	"go.neonxp.dev/jsonrpc2/transport"
 )
 
-var bridgeFees schema.BridgeFees
-
 func StartAPI(conf *config.Config) error {
 
 	s := rpc.New(
@@ -23,6 +21,7 @@ func StartAPI(conf *config.Config) error {
 	)
 
 	s.Register("fees", rpc.H(Fees))
+	s.Register("tokens", rpc.H(Tokens))
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer cancel()
@@ -36,6 +35,10 @@ func StartAPI(conf *config.Config) error {
 
 func Fees(ctx context.Context, _ *NoArgs) (*schema.BridgeFees, error) {
 	return &global.BridgeFees, nil
+}
+
+func Tokens(ctx context.Context, _ *NoArgs) (*schema.Tokens, error) {
+	return &global.Tokens, nil
 }
 
 type NoArgs struct {

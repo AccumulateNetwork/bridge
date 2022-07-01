@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
 type ResponseSafe struct {
@@ -32,7 +33,7 @@ type ResponseEstSafeTxGas struct {
 }
 */
 
-type RequestGnosisTx struct {
+type GnosisTx struct {
 	Safe                    string  `json:"safe"`
 	To                      string  `json:"to"`
 	Value                   int64   `json:"value"`
@@ -48,6 +49,8 @@ type RequestGnosisTx struct {
 	Sender                  string  `json:"sender"`
 	Signature               string  `json:"signature"`
 	Origin                  *string `json:"origin"`
+	//
+	Signatures string `json:"signatures"`
 }
 
 type ResponseErrorGnosisTx struct {
@@ -73,7 +76,7 @@ func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 }
 
 // CreateSafeMultisigTx submits multisig tx to gnosis safe API
-func (g *Gnosis) CreateSafeMultisigTx(data *RequestGnosisTx) (*ResponseErrorGnosisTx, error) {
+func (g *Gnosis) CreateSafeMultisigTx(data *GnosisTx) (*ResponseErrorGnosisTx, error) {
 
 	param, err := json.Marshal(data)
 	if err != nil {
@@ -86,6 +89,24 @@ func (g *Gnosis) CreateSafeMultisigTx(data *RequestGnosisTx) (*ResponseErrorGnos
 	}
 
 	var resp ResponseErrorGnosisTx
+
+	if err = json.Unmarshal(body, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+
+}
+
+// GetSafeMultisigTx submits multisig tx to gnosis safe API
+func (g *Gnosis) GetSafeMultisigTx(nonce int) (*GnosisTx, error) {
+
+	body, err := g.makeRequest("safes/"+g.SafeAddress+"/multisig-transactions/?nonce="+strconv.Itoa(nonce), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp GnosisTx
 
 	if err = json.Unmarshal(body, &resp); err != nil {
 		return nil, err
