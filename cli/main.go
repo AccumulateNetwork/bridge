@@ -17,6 +17,7 @@ import (
 	"github.com/AccumulateNetwork/bridge/evm"
 	"github.com/AccumulateNetwork/bridge/gnosis"
 	"github.com/AccumulateNetwork/bridge/schema"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/urfave/cli/v2" // imports as package "cli"
@@ -98,8 +99,8 @@ func main() {
 					tx := gnosis.GnosisTx{}
 					tx.To = g.BridgeAddress
 					tx.Data = hexutil.Encode(data)
-					tx.GasToken = gnosis.ZERO_ADDR
-					tx.RefundReceiver = gnosis.ZERO_ADDR
+					tx.GasToken = abiutil.ZERO_ADDR
+					tx.RefundReceiver = abiutil.ZERO_ADDR
 					tx.Nonce = safe.Nonce
 					tx.ContractTransactionHash = hexutil.Encode(contractHash)
 					tx.Sender = g.PublicKey.Hex()
@@ -197,20 +198,22 @@ func main() {
 					gasTipCap := &big.Int{}
 					gasTipCap.SetInt64(priorityFee)
 
-					txData, err := hex.DecodeString(gnosisTx.Data)
+					txData, err := abiutil.GenerateGnosisTx(g.SafeAddress, gnosisTx.Data, gnosisTx.Signature)
 					if err != nil {
-						fmt.Print("can not decode gnosis safe tx data: ")
+						fmt.Print("can not generate tx data: ")
 						return err
 					}
+
+					to := common.HexToAddress(g.SafeAddress)
 
 					tx := types.NewTx(&types.DynamicFeeTx{
 						ChainID:   chainId,
 						Nonce:     uint64(nonce),
 						GasFeeCap: gasFeeCap,
 						GasTipCap: gasTipCap,
-						// Gas: ,
-						// To: ,
-						Data: txData,
+						Gas:       uint64(200000),
+						To:        &to,
+						Data:      txData,
 					})
 
 					fmt.Print(tx, safe)
