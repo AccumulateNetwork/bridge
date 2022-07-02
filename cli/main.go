@@ -137,7 +137,7 @@ func main() {
 						return err
 					}
 
-					gasPrice, err := strconv.ParseInt(c.Args().Get(0), 10, 64)
+					gasPrice, err := strconv.ParseInt(c.Args().Get(1), 10, 64)
 					if err != nil {
 						fmt.Print("incorrect gas price: ")
 						return err
@@ -215,13 +215,24 @@ func main() {
 					chainId.SetInt64(int64(cl.ChainId))
 
 					gasFeeCap := &big.Int{}
-					gasFeeCap.SetInt64(gasPrice)
+					gasFeeCap.SetInt64(gasPrice * 1e9)
 
 					gasTipCap := &big.Int{}
-					gasTipCap.SetInt64(priorityFee)
+					gasTipCap.SetInt64(priorityFee * 1e9)
+
+					// concatenate signatures
+					var sig []byte
+					for _, con := range gnosisTx.Confirmations {
+						sigBytes, err := hexutil.Decode(con.Signature)
+						if err != nil {
+							fmt.Print("can not decode signature hex: ")
+							return err
+						}
+						sig = append(sig, sigBytes...)
+					}
 
 					// generate tx input data
-					txData, err := abiutil.GenerateGnosisTx(g.SafeAddress, gnosisTx.Data, gnosisTx.Confirmations[len(gnosisTx.Confirmations)-1].Signature)
+					txData, err := abiutil.GenerateGnosisTx(g.SafeAddress, gnosisTx.Data, hexutil.Encode(sig))
 					if err != nil {
 						fmt.Print("can not generate tx data: ")
 						return err
@@ -243,6 +254,7 @@ func main() {
 						GasTipCap: gasTipCap,
 						Gas:       uint64(200000),
 						To:        &to,
+						Value:     &big.Int{},
 						Data:      txData,
 					})
 
