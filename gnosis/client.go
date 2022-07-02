@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type ResponseSafe struct {
@@ -33,7 +34,7 @@ type ResponseEstSafeTxGas struct {
 }
 */
 
-type GnosisTx struct {
+type NewMultisigTx struct {
 	Safe                    string  `json:"safe"`
 	To                      string  `json:"to"`
 	Value                   int64   `json:"value"`
@@ -49,8 +50,40 @@ type GnosisTx struct {
 	Sender                  string  `json:"sender"`
 	Signature               string  `json:"signature"`
 	Origin                  *string `json:"origin"`
-	//
-	Signatures string `json:"signatures"`
+}
+
+type ResponseMultisigTx struct {
+	Count   int64         `json:"count"`
+	Results []*MultisigTx `json:"results"`
+}
+
+type MultisigTx struct {
+	Safe                  string                    `json:"safe"`
+	To                    string                    `json:"to"`
+	Value                 int64                     `json:"value,string"`
+	Data                  string                    `json:"data"`
+	Operation             int64                     `json:"operation"`
+	GasToken              string                    `json:"gasToken"`
+	SafeTxGas             int64                     `json:"safeTxGas"`
+	BaseGas               int64                     `json:"baseGas"`
+	GasPrice              int64                     `json:"gasPrice,string"`
+	RefundReceiver        string                    `json:"refundReceiver"`
+	Nonce                 int64                     `json:"nonce"`
+	ExecutionDate         *time.Time                `json:"executionDate"`
+	SubmissionDate        *time.Time                `json:"submissionDate"`
+	Modified              *time.Time                `json:"modified"`
+	SafeTxHash            string                    `json:"safeTxHash"`
+	IsExecuted            bool                      `json:"isExecuted"`
+	ConfirmationsRequired int64                     `json:"confirmationsRequired"`
+	Confirmations         []*MultisigTxConfirmation `json:"confirmations"`
+}
+
+type MultisigTxConfirmation struct {
+	Owner           string     `json:"owner"`
+	SubmissionDate  *time.Time `json:"submissionDate"`
+	TransactionHash string     `json:"transactionHash"`
+	Signature       string     `json:"signature"`
+	SignatureType   string     `json:"signatureType"`
 }
 
 type ResponseErrorGnosisTx struct {
@@ -76,7 +109,7 @@ func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 }
 
 // CreateSafeMultisigTx submits multisig tx to gnosis safe API
-func (g *Gnosis) CreateSafeMultisigTx(data *GnosisTx) (*ResponseErrorGnosisTx, error) {
+func (g *Gnosis) CreateSafeMultisigTx(data *NewMultisigTx) (*ResponseErrorGnosisTx, error) {
 
 	param, err := json.Marshal(data)
 	if err != nil {
@@ -99,20 +132,20 @@ func (g *Gnosis) CreateSafeMultisigTx(data *GnosisTx) (*ResponseErrorGnosisTx, e
 }
 
 // GetSafeMultisigTx submits multisig tx to gnosis safe API
-func (g *Gnosis) GetSafeMultisigTx(nonce int) (*GnosisTx, error) {
+func (g *Gnosis) GetSafeMultisigTx(nonce int) ([]*MultisigTx, error) {
 
 	body, err := g.makeRequest("safes/"+g.SafeAddress+"/multisig-transactions/?nonce="+strconv.Itoa(nonce), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var resp GnosisTx
+	var resp ResponseMultisigTx
 
 	if err = json.Unmarshal(body, &resp); err != nil {
 		return nil, err
 	}
 
-	return &resp, nil
+	return resp.Results, nil
 
 }
 

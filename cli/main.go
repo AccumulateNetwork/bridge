@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -20,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/urfave/cli/v2" // imports as package "cli"
 )
 
@@ -96,7 +98,7 @@ func main() {
 						return err
 					}
 
-					tx := gnosis.GnosisTx{}
+					tx := gnosis.NewMultisigTx{}
 					tx.To = g.BridgeAddress
 					tx.Data = hexutil.Encode(data)
 					tx.GasToken = abiutil.ZERO_ADDR
@@ -128,6 +130,7 @@ func main() {
 						return nil
 					}
 
+					// safe nonce
 					nonce, err := strconv.ParseInt(c.Args().Get(0), 10, 64)
 					if err != nil {
 						fmt.Print("incorrect nonce: ")
@@ -164,31 +167,50 @@ func main() {
 						return err
 					}
 
+					// init gnosis safe client
 					g, err := gnosis.NewGnosis(conf)
 					if err != nil {
 						fmt.Print("can not init gnosis module: ")
 						return err
 					}
 
-					safe, err := g.GetSafe()
-					if err != nil {
-						fmt.Print("can not get gnosis safe: ")
-						return err
-					}
+					/*
+						safe, err = g.GetSafe()
+						if err != nil {
+							fmt.Print("can not get gnosis safe: ")
+							return err
+						}
+					*/
 
+					// setup evm client
 					cl, err := evm.NewEVMClient(conf)
 					if err != nil {
 						fmt.Print("can not init evm client: ")
 						return err
 					}
 
-					// get tx from gnosis
-					gnosisTx, err := g.GetSafeMultisigTx(int(nonce))
+					// get txs from gnosis
+					gnosisTxs, err := g.GetSafeMultisigTx(int(nonce))
 					if err != nil {
 						fmt.Printf("can not get gnosis safe tx with nonce %d: ", nonce)
 						return err
 					}
 
+					var gnosisTx *gnosis.MultisigTx
+
+					// temp (need to refactor)
+					// find necessary tx in array
+					for _, tx := range gnosisTxs {
+						if tx.IsExecuted {
+							return fmt.Errorf("tx is already executed")
+						}
+						if tx.ConfirmationsRequired > 0 {
+							return fmt.Errorf("tx is not confirmed")
+						}
+						gnosisTx = tx
+					}
+
+					// convert to big.Int
 					chainId := &big.Int{}
 					chainId.SetInt64(int64(cl.ChainId))
 
@@ -198,7 +220,8 @@ func main() {
 					gasTipCap := &big.Int{}
 					gasTipCap.SetInt64(priorityFee)
 
-					txData, err := abiutil.GenerateGnosisTx(g.SafeAddress, gnosisTx.Data, gnosisTx.Signature)
+					// generate tx input data
+					txData, err := abiutil.GenerateGnosisTx(g.SafeAddress, gnosisTx.Data, gnosisTx.Confirmations[len(gnosisTx.Confirmations)-1].Signature)
 					if err != nil {
 						fmt.Print("can not generate tx data: ")
 						return err
@@ -206,9 +229,16 @@ func main() {
 
 					to := common.HexToAddress(g.SafeAddress)
 
+					// nonce of tx sender
+					fromNonce, err := cl.Client.PendingNonceAt(context.Background(), cl.PublicKey)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					// generate new tx EIP-1559
 					tx := types.NewTx(&types.DynamicFeeTx{
 						ChainID:   chainId,
-						Nonce:     uint64(nonce),
+						Nonce:     fromNonce,
 						GasFeeCap: gasFeeCap,
 						GasTipCap: gasTipCap,
 						Gas:       uint64(200000),
@@ -216,7 +246,30 @@ func main() {
 						Data:      txData,
 					})
 
-					fmt.Print(tx, safe)
+					// sign tx
+					signedTx, err := types.SignTx(tx, types.LatestSignerForChainID(chainId), cl.PrivateKey)
+					if err != nil {
+						fmt.Print("can not sign tx: ")
+						return err
+					}
+
+					ts := types.Transactions{signedTx}
+					rawTxBytes, err := rlp.EncodeToBytes(ts[0])
+					if err != nil {
+						fmt.Print("can not convert tx to bytes: ")
+						return err
+					}
+
+					rawTxHex := hex.EncodeToString(rawTxBytes)
+					fmt.Print(rawTxHex)
+
+					err = cl.Client.SendTransaction(context.Background(), signedTx)
+					if err != nil {
+						fmt.Print("can not send tx : ")
+						return err
+					}
+
+					fmt.Printf("tx sent: %s", signedTx.Hash().Hex())
 
 					return nil
 
