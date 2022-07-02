@@ -119,8 +119,8 @@ func start(configFile string) {
 		// set chainId for tokens
 		global.Tokens.ChainID = int64(conf.EVM.ChainId)
 
-		fmt.Printf("Mint fee: %.2f%%\n", float64(global.BridgeFees.MintFee)/1000)
-		fmt.Printf("Burn fee: %.2f%%\n", float64(global.BridgeFees.BurnFee)/1000)
+		fmt.Printf("Mint fee: %.2f%%\n", float64(global.BridgeFees.MintFee)/100)
+		fmt.Printf("Burn fee: %.2f%%\n", float64(global.BridgeFees.BurnFee)/100)
 		fmt.Println("EVM tx fee:", global.BridgeFees.EVMFee)
 
 		// parse token list from Accumulate
