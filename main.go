@@ -73,6 +73,7 @@ func start(configFile string) {
 
 		fmt.Println("EVM address:", e.PublicKey)
 		fmt.Println("EVM API:", e.API)
+		fmt.Println("EVM ChainId:", e.ChainId)
 
 		// init gnosis client
 		if a, err = accumulate.NewAccumulateClient(conf); err != nil {
@@ -208,38 +209,38 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 
 	// check version
 	if len(entry.Entry.Data) < 2 {
-		log.Error("looking for at least 2 data fields in entry, found ", len(entry.Entry.Data))
+		log.Debug("looking for at least 2 data fields in entry, found ", len(entry.Entry.Data))
 		return
 	}
 
 	version, err := hex.DecodeString(entry.Entry.Data[0])
 	if err != nil {
-		log.Error("can not decode entry data")
+		log.Debug("can not decode entry data")
 		return
 	}
 
 	if !bytes.Equal(version, []byte(accumulate.TOKEN_REGISTRY_VERSION)) {
-		log.Error("entry version is not ", accumulate.TOKEN_REGISTRY_VERSION)
+		log.Debug("entry version is not ", accumulate.TOKEN_REGISTRY_VERSION)
 		return
 	}
 
 	// convert entry data to bytes
 	tokenData, err := hex.DecodeString(entry.Entry.Data[1])
 	if err != nil {
-		log.Error("can not decode entry data")
+		log.Debug("can not decode entry data")
 		return
 	}
 
 	// try to unmarshal the entry
 	err = json.Unmarshal(tokenData, tokenEntry)
 	if err != nil {
-		log.Error("unable to unmarshal entry data")
+		log.Debug("unable to unmarshal entry data")
 		return
 	}
 
 	// if entry is disabled, skip
 	if !tokenEntry.Enabled {
-		log.Error("token is disabled")
+		log.Debug("token is disabled")
 		return
 	}
 
@@ -247,7 +248,7 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 	validate := validator.New()
 	err = validate.Struct(tokenEntry)
 	if err != nil {
-		log.Error(err)
+		log.Debug(err)
 		return
 	}
 
@@ -258,7 +259,7 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 		if wrappedToken.ChainID == global.Tokens.ChainID {
 			err = validate.Struct(wrappedToken)
 			if err != nil {
-				log.Error(err)
+				log.Debug(err)
 				return
 			}
 			token.Address = wrappedToken.Address
@@ -267,14 +268,14 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 
 	// if no token address found, error
 	if token.Address == "" {
-		log.Error("can not find token address for chainid ", global.Tokens.ChainID)
+		log.Debug("can not find token address for chainid ", global.Tokens.ChainID)
 		return
 	}
 
 	// parse token info from Accumulate
 	t, err := a.QueryToken(&accumulate.Params{URL: tokenEntry.URL})
 	if err != nil {
-		log.Error("can not get token from accumulate api ", err)
+		log.Debug("can not get token from accumulate api ", err)
 		return
 	}
 

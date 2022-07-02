@@ -9,9 +9,8 @@ acme:
 evm:
 #  node: ""
 #  chainid: 1
-#  infuraprojectid: ""
-#  infuraprojectsecret: ""
 #  safeaddress: ""
 #  bridgeaddress: ""
 #  privatekey: ""
 #  maxgasfee: 30
+#  maxpriorityfee: 2

@@ -1,9 +1,9 @@
 package evm
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"fmt"
-	"strconv"
 
 	"github.com/AccumulateNetwork/bridge/config"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,12 +17,11 @@ const (
 )
 
 type EVMClient struct {
-	API                 string
-	ChainId             int
-	PrivateKey          *ecdsa.PrivateKey
-	PublicKey           common.Address
-	InfuraProjectSecret string
-	Client              *ethclient.Client
+	API        string
+	ChainId    int
+	PrivateKey *ecdsa.PrivateKey
+	PublicKey  common.Address
+	Client     *ethclient.Client
 }
 
 // NewEVMClient constructs the EVM client
@@ -30,33 +29,28 @@ func NewEVMClient(conf *config.Config) (*EVMClient, error) {
 
 	c := &EVMClient{}
 
-	c.API = conf.EVM.Node
-	c.ChainId = conf.EVM.ChainId
-
-	// if Infura ID/secret is in config, use Infura API
-	if conf.EVM.InfuraProjectID != "" && conf.EVM.InfuraProjectSecret != "" {
-
-		c.InfuraProjectSecret = conf.EVM.InfuraProjectSecret
-
-		switch c.ChainId {
-
-		case 1:
-			c.API = INFURA_API_MAINNET + conf.EVM.InfuraProjectID
-		case 4:
-			c.API = INFURA_API_RINKEBY + conf.EVM.InfuraProjectID
-		default:
-			return nil, fmt.Errorf("received unknown chainId from config: %s", strconv.Itoa(c.ChainId))
-
-		}
-
+	if conf.EVM.Node == "" {
+		return nil, fmt.Errorf("received empty node from config: %s", conf.EVM.Node)
 	}
+
+	c.API = conf.EVM.Node
 
 	client, err := ethclient.Dial(conf.EVM.Node)
 	if err != nil {
 		return nil, fmt.Errorf("can not connect to node: %s", conf.EVM.Node)
 	}
 
+	chainId, err := client.ChainID(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("can not get chainId from node: %s", conf.EVM.Node)
+	}
+
+	if conf.EVM.ChainId != int(chainId.Int64()) {
+		return nil, fmt.Errorf("chainId from node is %d, chainId from config is %d", chainId, conf.EVM.ChainId)
+	}
+
 	c.Client = client
+	c.ChainId = int(chainId.Int64())
 
 	if conf.EVM.PrivateKey == "" {
 		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.EVM.PrivateKey)
