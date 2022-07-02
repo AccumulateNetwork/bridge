@@ -11,11 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-const (
-	INFURA_API_MAINNET = "https://mainnet.infura.io/v3/"
-	INFURA_API_RINKEBY = "https://rinkeby.infura.io/v3/"
-)
-
 type EVMClient struct {
 	API        string
 	ChainId    int

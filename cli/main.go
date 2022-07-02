@@ -232,7 +232,7 @@ func main() {
 					}
 
 					// generate tx input data
-					txData, err := abiutil.GenerateGnosisTx(g.BridgeAddress, gnosisTx.Data, hexutil.Encode(sig))
+					txData, err := abiutil.GenerateExecTransaction(g.BridgeAddress, gnosisTx.Data, hexutil.Encode(sig))
 					if err != nil {
 						fmt.Print("can not generate tx data: ")
 						return err
@@ -501,7 +501,7 @@ func printMintHelp() {
 }
 
 func printEthSubmitHelp() {
-	fmt.Println("eth-submit [gnosis safe tx nonce] [max gwei price] [max priority fee]")
+	fmt.Println("eth-submit [gnosis safetxhash]")
 }
 
 func printReleaseHelp() {

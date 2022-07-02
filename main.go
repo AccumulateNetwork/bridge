@@ -137,7 +137,7 @@ func start(configFile string) {
 
 		fmt.Println("Got", len(tokens.Items), "data entry(s)")
 		for _, item := range tokens.Items {
-			parseToken(a, item)
+			parseToken(a, e, item)
 		}
 
 		fmt.Println("Found", len(global.Tokens.Items), "token(s)")
@@ -201,7 +201,7 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 }
 
 // parseToken parses data entry with token information received from data account
-func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
+func parseToken(a *accumulate.AccumulateClient, e *evm.EVMClient, entry *accumulate.DataEntry) {
 
 	fmt.Println("Parsing", entry.EntryHash)
 
@@ -262,12 +262,12 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 				log.Debug(err)
 				return
 			}
-			token.Address = wrappedToken.Address
+			token.EVMAddress = wrappedToken.Address
 		}
 	}
 
 	// if no token address found, error
-	if token.Address == "" {
+	if token.EVMAddress == "" {
 		log.Debug("can not find token address for chainid ", global.Tokens.ChainID)
 		return
 	}
@@ -283,12 +283,20 @@ func parseToken(a *accumulate.AccumulateClient, entry *accumulate.DataEntry) {
 	token.Symbol = t.Data.Symbol
 	token.Precision = t.Data.Precision
 
+	// parse token info from Ethereum
+	evmT, err := e.GetERC20(token.EVMAddress)
+	if err != nil {
+		log.Debug("can not get token from ethereum api ", err)
+	}
+	token.EVMSymbol = evmT.Symbol
+	token.EVMDecimals = evmT.Decimals
+
 	duplicateIndex := -1
 
 	// check for duplicates, if found override
 	for i, item := range global.Tokens.Items {
 		if strings.EqualFold(item.URL, token.URL) {
-			log.Info("duplicate token ", token.URL, ", overriden")
+			log.Info("duplicate token ", token.URL, ", overwritten")
 			duplicateIndex = i
 			global.Tokens.Items[i] = token
 		}

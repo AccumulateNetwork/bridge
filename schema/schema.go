@@ -40,8 +40,10 @@ type Tokens struct {
 
 // Token is an item of Tokens{}
 type Token struct {
-	URL       string `json:"url"`
-	Symbol    string `json:"symbol"`
-	Precision int64  `json:"precision"`
-	Address   string `json:"address"`
+	URL         string `json:"url"`
+	Symbol      string `json:"symbol"`
+	Precision   int64  `json:"precision"`
+	EVMAddress  string `json:"evmAddress"`
+	EVMSymbol   string `json:"evmSymbol"`
+	EVMDecimals int64  `json:"evmDecimals"`
 }
