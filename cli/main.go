@@ -232,7 +232,7 @@ func main() {
 					}
 
 					// generate tx input data
-					txData, err := abiutil.GenerateGnosisTx(g.SafeAddress, gnosisTx.Data, hexutil.Encode(sig))
+					txData, err := abiutil.GenerateGnosisTx(g.BridgeAddress, gnosisTx.Data, hexutil.Encode(sig))
 					if err != nil {
 						fmt.Print("can not generate tx data: ")
 						return err
