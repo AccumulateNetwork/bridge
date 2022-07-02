@@ -269,6 +269,8 @@ func main() {
 						return err
 					}
 
+					fmt.Printf("tx sent: %s", signedTx.Hash().Hex())
+
 					return nil
 
 				},
