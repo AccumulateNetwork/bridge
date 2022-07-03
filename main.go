@@ -99,22 +99,10 @@ func start(configFile string) {
 			log.Fatal(err)
 		}
 
-		allChainsFees := &schema.BridgeFeesEntry{}
-
-		err = json.Unmarshal(feesBytes, &allChainsFees)
+		err = json.Unmarshal(feesBytes, &global.BridgeFees)
 		if err != nil {
 			log.Error("unable to unmarshal entry data")
 			log.Fatal(err)
-		}
-
-		global.BridgeFees.MintFee = allChainsFees.MintFee
-		global.BridgeFees.BurnFee = allChainsFees.BurnFee
-
-		// find evm fee for current evm
-		for _, chain := range allChainsFees.EVMFees {
-			if conf.EVM.ChainId == int(chain.ChainID) {
-				global.BridgeFees.EVMFee = chain.EVMFee
-			}
 		}
 
 		// set chainId for tokens
@@ -122,7 +110,6 @@ func start(configFile string) {
 
 		fmt.Printf("Mint fee: %.2f%%\n", float64(global.BridgeFees.MintFee)/100)
 		fmt.Printf("Burn fee: %.2f%%\n", float64(global.BridgeFees.BurnFee)/100)
-		fmt.Println("EVM tx fee:", global.BridgeFees.EVMFee)
 
 		// parse token list from Accumulate
 		// only once – when node is started
@@ -263,6 +250,7 @@ func parseToken(a *accumulate.AccumulateClient, e *evm.EVMClient, entry *accumul
 				return
 			}
 			token.EVMAddress = wrappedToken.Address
+			token.EVMMintTxCost = wrappedToken.MintTxCost
 		}
 	}
 

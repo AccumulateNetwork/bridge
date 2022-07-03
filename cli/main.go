@@ -386,7 +386,7 @@ func main() {
 				},
 				Action: func(c *cli.Context) error {
 
-					if c.NArg() != 3 {
+					if c.NArg() != 4 {
 						printTokenRegisterHelp()
 						return nil
 					}
@@ -394,12 +394,19 @@ func main() {
 					accumulateURL := c.Args().Get(0)
 					evmChainIdString := c.Args().Get(1)
 					evmTokenContract := c.Args().Get(2)
+					evmMintTxCostString := c.Args().Get(3)
 
 					var err error
 
 					evmChainId, err := strconv.Atoi(evmChainIdString)
 					if err != nil {
 						fmt.Print("chainId must be a number")
+						return err
+					}
+
+					evmMintTxCost, err := strconv.Atoi(evmMintTxCostString)
+					if err != nil {
+						fmt.Print("mintTxCost must be a number")
 						return err
 					}
 
@@ -413,7 +420,7 @@ func main() {
 						token.Enabled = false
 					}
 
-					token.Wrapped = append(token.Wrapped, &schema.WrappedToken{Address: evmTokenContract, ChainID: int64(evmChainId)})
+					token.Wrapped = append(token.Wrapped, &schema.WrappedToken{Address: evmTokenContract, ChainID: int64(evmChainId), MintTxCost: int64(evmMintTxCost)})
 
 					tokenBytes, err := json.Marshal(token)
 					if err != nil {
@@ -431,15 +438,13 @@ func main() {
 				Usage: "Generates accumulate data entry for bridge fees",
 				Action: func(c *cli.Context) error {
 
-					if c.NArg() != 4 {
+					if c.NArg() != 2 {
 						printUpdateFeesHelp()
 						return nil
 					}
 
 					mintFeeString := c.Args().Get(0)
 					burnFeeString := c.Args().Get(1)
-					evmChainIdString := c.Args().Get(2)
-					evmFeeString := c.Args().Get(3)
 
 					var err error
 
@@ -455,22 +460,9 @@ func main() {
 						return err
 					}
 
-					evmChainId, err := strconv.Atoi(evmChainIdString)
-					if err != nil {
-						fmt.Print("chainId must be a number")
-						return err
-					}
-
-					evmFee, err := strconv.Atoi(evmFeeString)
-					if err != nil {
-						fmt.Print("evmFee must be a number")
-						return err
-					}
-
-					fees := &schema.BridgeFeesEntry{}
+					fees := &schema.BridgeFees{}
 					fees.BurnFee = int64(burnFee)
 					fees.MintFee = int64(mintFee)
-					fees.EVMFees = append(fees.EVMFees, &schema.EVMFee{EVMFee: int64(evmFee), ChainID: int64(evmChainId)})
 
 					feesBytes, err := json.Marshal(fees)
 					if err != nil {
@@ -513,9 +505,9 @@ func printAccSignHelp() {
 }
 
 func printTokenRegisterHelp() {
-	fmt.Println("token-register [accumulate token URL] [evm chain id] [evm token contract address] [--disable (optional)]")
+	fmt.Println("token-register [accumulate token URL] [evm chain id] [evm token contract address] [evm mint tx cost] [--disable (optional)]")
 }
 
 func printUpdateFeesHelp() {
-	fmt.Println("update-fees [mint fee (bps)] [burn fee (bps)] [evm chain id] [evm tx fee]")
+	fmt.Println("update-fees [mint fee (bps)] [burn fee (bps)]")
 }
