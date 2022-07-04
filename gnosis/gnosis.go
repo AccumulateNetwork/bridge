@@ -14,6 +14,7 @@ import (
 const (
 	GNOSIS_API_MAINNET = "https://safe-transaction.gnosis.io/api/v1/"
 	GNOSIS_API_RINKEBY = "https://safe-transaction.rinkeby.gnosis.io/api/v1/"
+	MINT_GAS_LIMIT     = 200000
 )
 
 type Gnosis struct {

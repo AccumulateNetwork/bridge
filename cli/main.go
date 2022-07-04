@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -20,7 +19,6 @@ import (
 	"github.com/AccumulateNetwork/bridge/schema"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/urfave/cli/v2" // imports as package "cli"
 )
 
@@ -198,16 +196,6 @@ func main() {
 						return err
 					}
 
-					// convert to big.Int
-					chainId := &big.Int{}
-					chainId.SetInt64(int64(cl.ChainId))
-
-					gasFeeCap := &big.Int{}
-					gasFeeCap.SetInt64(gasPrice * 1e9)
-
-					gasTipCap := &big.Int{}
-					gasTipCap.SetInt64(priorityFee * 1e9)
-
 					// concatenate signatures
 					var sig []byte
 					for _, con := range gnosisTx.Confirmations {
@@ -228,51 +216,12 @@ func main() {
 
 					to := common.HexToAddress(g.SafeAddress)
 
-					// nonce of tx sender
-					fromNonce, err := cl.Client.PendingNonceAt(context.Background(), cl.PublicKey)
+					sentTx, err := cl.SubmitEIP1559Tx(gnosis.MINT_GAS_LIMIT, gasPrice, priorityFee, &to, 0, txData)
 					if err != nil {
-						log.Fatal(err)
-					}
-
-					// generate new tx EIP-1559
-					tx := types.NewTx(&types.DynamicFeeTx{
-						ChainID:   chainId,
-						Nonce:     fromNonce,
-						GasFeeCap: gasFeeCap,
-						GasTipCap: gasTipCap,
-						Gas:       uint64(200000),
-						To:        &to,
-						Value:     &big.Int{},
-						Data:      txData,
-					})
-
-					// sign tx
-					signedTx, err := types.SignTx(tx, types.LatestSignerForChainID(chainId), cl.PrivateKey)
-					if err != nil {
-						fmt.Print("can not sign tx: ")
 						return err
 					}
 
-					/*
-						// debug code
-						ts := types.Transactions{signedTx}
-						rawTxBytes, err := rlp.EncodeToBytes(ts[0])
-						if err != nil {
-							fmt.Print("can not convert tx to bytes: ")
-							return err
-						}
-
-						rawTxHex := hex.EncodeToString(rawTxBytes)
-						fmt.Print(rawTxHex)
-					*/
-
-					err = cl.Client.SendTransaction(context.Background(), signedTx)
-					if err != nil {
-						fmt.Print("can not send tx: ")
-						return err
-					}
-
-					fmt.Printf("tx sent: %s", signedTx.Hash().Hex())
+					fmt.Printf("tx sent: %s", sentTx.Hash().Hex())
 
 					return nil
 
