@@ -20,7 +20,7 @@ func (e *EVMClient) GetERC20(tokenAddress string) (*ERC20, error) {
 
 	address := common.HexToAddress(tokenAddress)
 
-	instance, err := binding.NewWrappedtoken(address, e.Client)
+	instance, err := binding.NewWrappedToken(address, e.Client)
 	if err != nil {
 		return nil, err
 	}
