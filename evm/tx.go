@@ -37,7 +37,7 @@ func (e *EVMClient) SubmitEIP1559Tx(gasLimit int64, gasPrice int64, priorityFee 
 		Nonce:     fromNonce,
 		GasFeeCap: gasFeeCap,
 		GasTipCap: gasTipCap,
-		Gas:       uint64(200000),
+		Gas:       uint64(gasLimit),
 		To:        to,
 		Value:     txValue,
 		Data:      data,
