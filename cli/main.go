@@ -21,7 +21,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/urfave/cli/v2" // imports as package "cli"
 )
 
@@ -125,29 +124,14 @@ func main() {
 				Usage: "Submits ethereum tx from gnosis safe",
 				Action: func(c *cli.Context) error {
 
-					if c.NArg() != 3 {
+					var err error
+
+					if c.NArg() == 0 {
 						printEthSubmitHelp()
 						return nil
 					}
 
-					// safe nonce
-					nonce, err := strconv.ParseInt(c.Args().Get(0), 10, 64)
-					if err != nil {
-						fmt.Print("incorrect nonce: ")
-						return err
-					}
-
-					gasPrice, err := strconv.ParseInt(c.Args().Get(1), 10, 64)
-					if err != nil {
-						fmt.Print("incorrect gas price: ")
-						return err
-					}
-
-					priorityFee, err := strconv.ParseInt(c.Args().Get(2), 10, 64)
-					if err != nil {
-						fmt.Print("incorrect priority fee: ")
-						return err
-					}
+					safeTxHash := c.Args().Get(0)
 
 					var conf *config.Config
 					configFile := c.String("config")
@@ -167,20 +151,31 @@ func main() {
 						return err
 					}
 
+					gasPrice := conf.EVM.MaxGasFee
+					priorityFee := conf.EVM.MaxPriorityFee
+
+					// parse optional args
+					if c.Args().Get(1) != "" {
+						gasPrice, err = strconv.ParseInt(c.Args().Get(1), 10, 64)
+						if err != nil {
+							fmt.Print("incorrect gas price: ")
+							return err
+						}
+					}
+					if c.Args().Get(2) != "" {
+						priorityFee, err = strconv.ParseInt(c.Args().Get(2), 10, 64)
+						if err != nil {
+							fmt.Print("incorrect priority fee: ")
+							return err
+						}
+					}
+
 					// init gnosis safe client
 					g, err := gnosis.NewGnosis(conf)
 					if err != nil {
 						fmt.Print("can not init gnosis module: ")
 						return err
 					}
-
-					/*
-						safe, err = g.GetSafe()
-						if err != nil {
-							fmt.Print("can not get gnosis safe: ")
-							return err
-						}
-					*/
 
 					// setup evm client
 					cl, err := evm.NewEVMClient(conf)
@@ -190,24 +185,10 @@ func main() {
 					}
 
 					// get txs from gnosis
-					gnosisTxs, err := g.GetSafeMultisigTx(int(nonce))
+					gnosisTx, err := g.GetSafeMultisigTx(safeTxHash)
 					if err != nil {
-						fmt.Printf("can not get gnosis safe tx with nonce %d: ", nonce)
+						fmt.Printf("can not get gnosis safe tx with hash %s: ", safeTxHash)
 						return err
-					}
-
-					var gnosisTx *gnosis.MultisigTx
-
-					// temp (need to refactor)
-					// find necessary tx in array
-					for _, tx := range gnosisTxs {
-						if tx.IsExecuted {
-							return fmt.Errorf("tx is already executed")
-						}
-						if tx.ConfirmationsRequired > 0 {
-							return fmt.Errorf("tx is not confirmed")
-						}
-						gnosisTx = tx
 					}
 
 					// convert to big.Int
@@ -265,19 +246,22 @@ func main() {
 						return err
 					}
 
-					ts := types.Transactions{signedTx}
-					rawTxBytes, err := rlp.EncodeToBytes(ts[0])
-					if err != nil {
-						fmt.Print("can not convert tx to bytes: ")
-						return err
-					}
+					/*
+						// debug code
+						ts := types.Transactions{signedTx}
+						rawTxBytes, err := rlp.EncodeToBytes(ts[0])
+						if err != nil {
+							fmt.Print("can not convert tx to bytes: ")
+							return err
+						}
 
-					rawTxHex := hex.EncodeToString(rawTxBytes)
-					fmt.Print(rawTxHex)
+						rawTxHex := hex.EncodeToString(rawTxBytes)
+						fmt.Print(rawTxHex)
+					*/
 
 					err = cl.Client.SendTransaction(context.Background(), signedTx)
 					if err != nil {
-						fmt.Print("can not send tx : ")
+						fmt.Print("can not send tx: ")
 						return err
 					}
 
@@ -493,7 +477,7 @@ func printMintHelp() {
 }
 
 func printEthSubmitHelp() {
-	fmt.Println("eth-submit [gnosis safetxhash]")
+	fmt.Println("eth-submit [gnosis safetxhash] [max gas fee (optional)] [max priority fee (optional)]")
 }
 
 func printReleaseHelp() {

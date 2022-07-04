@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -52,7 +51,7 @@ type NewMultisigTx struct {
 	Origin                  *string `json:"origin"`
 }
 
-type ResponseMultisigTx struct {
+type ResponseMultisigTxs struct {
 	Count   int64         `json:"count"`
 	Results []*MultisigTx `json:"results"`
 }
@@ -131,21 +130,21 @@ func (g *Gnosis) CreateSafeMultisigTx(data *NewMultisigTx) (*ResponseErrorGnosis
 
 }
 
-// GetSafeMultisigTx submits multisig tx to gnosis safe API
-func (g *Gnosis) GetSafeMultisigTx(nonce int) ([]*MultisigTx, error) {
+// GetSafeMultisigTx gets multisig tx from gnosis safe API
+func (g *Gnosis) GetSafeMultisigTx(safeTxHash string) (*MultisigTx, error) {
 
-	body, err := g.makeRequest("safes/"+g.SafeAddress+"/multisig-transactions/?nonce="+strconv.Itoa(nonce), nil)
+	body, err := g.makeRequest("multisig-transactions/"+safeTxHash, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var resp ResponseMultisigTx
+	var resp MultisigTx
 
 	if err = json.Unmarshal(body, &resp); err != nil {
 		return nil, err
 	}
 
-	return resp.Results, nil
+	return &resp, nil
 
 }
 
