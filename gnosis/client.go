@@ -85,10 +85,6 @@ type MultisigTxConfirmation struct {
 	SignatureType   string     `json:"signatureType"`
 }
 
-type ResponseErrorGnosisTx struct {
-	NonFieldErrors []string `json:"nonFieldErrors"`
-}
-
 // GetSafe gets safe info and current nonce
 func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 
@@ -108,25 +104,29 @@ func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 }
 
 // CreateSafeMultisigTx submits multisig tx to gnosis safe API
-func (g *Gnosis) CreateSafeMultisigTx(data *NewMultisigTx) (*ResponseErrorGnosisTx, error) {
+func (g *Gnosis) CreateSafeMultisigTx(data *NewMultisigTx) (*json.RawMessage, error) {
 
-	param, err := json.Marshal(data)
+	params, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
 
-	body, err := g.makeRequest("safes/"+g.SafeAddress+"/multisig-transactions/", param)
+	body, err := g.makeRequest("safes/"+g.SafeAddress+"/multisig-transactions/", params)
 	if err != nil {
 		return nil, err
 	}
 
-	var resp ResponseErrorGnosisTx
+	var resp json.RawMessage
 
-	if err = json.Unmarshal(body, &resp); err != nil {
-		return nil, err
+	// gnosis safe api returns empty response if everything is OK
+	// unmarshal message only if body is not empty
+	if len(body) > 0 {
+		if err = json.Unmarshal(body, &resp); err != nil {
+			return nil, err
+		}
 	}
 
-	return &resp, nil
+	return nil, nil
 
 }
 

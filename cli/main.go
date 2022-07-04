@@ -113,7 +113,14 @@ func main() {
 						return err
 					}
 
-					fmt.Print(resp)
+					if resp != nil {
+						respText, err := json.Marshal(&resp)
+						if err != nil {
+							fmt.Print("can not marshal gnosis api response: ")
+							return err
+						}
+						fmt.Print(string(respText))
+					}
 
 					return nil
 
