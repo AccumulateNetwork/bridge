@@ -40,7 +40,7 @@ func TestCreateSafeMultisigTx(t *testing.T) {
 	recipient := "0xC6386B0A95b60bCEa480C876e3b1F9AdB5B85314"
 	amount := big.NewInt(1e8)
 
-	data, err := abiutil.GenerateMintTx(token, recipient, amount)
+	data, err := abiutil.GenerateMintTxData(token, recipient, amount)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, data)
 

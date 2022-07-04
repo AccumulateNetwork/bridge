@@ -19,7 +19,7 @@ func (g *Gnosis) SignMintTx(tokenAddress string, recipientAddress string, amount
 		return nil, nil, err
 	}
 
-	data, err := abiutil.GenerateMintTx(tokenAddress, recipientAddress, amount)
+	data, err := abiutil.GenerateMintTxData(tokenAddress, recipientAddress, amount)
 	if err != nil {
 		return nil, nil, err
 	}
