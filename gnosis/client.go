@@ -20,19 +20,6 @@ type ResponseSafe struct {
 	Version         string   `json:"version"`
 }
 
-/*
-type RequestEstSafeTxGas struct {
-	To        string `json:"to"`
-	Value     int64  `json:"value"`
-	Data      string `json:"data"`
-	Operation int64  `json:"operation"`
-}
-
-type ResponseEstSafeTxGas struct {
-	SafeTxGas int64 `json:"safeTxGas,string,omitempty"`
-}
-*/
-
 type NewMultisigTx struct {
 	Safe                    string  `json:"safe"`
 	To                      string  `json:"to"`
