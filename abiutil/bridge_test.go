@@ -17,7 +17,7 @@ func TestGenerateMintTx(t *testing.T) {
 	amount := &big.Int{}
 	amount.SetInt64(1e8)
 
-	got, err := GenerateMintTx(token, recipient, amount)
+	got, err := GenerateMintTxData(token, recipient, amount)
 	assert.NoError(t, err)
 
 	assert.Equal(t, want, hexutil.Encode(got))

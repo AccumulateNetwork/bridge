@@ -86,7 +86,7 @@ func main() {
 						return err
 					}
 
-					data, err := abiutil.GenerateMintTx(token, recipient, big.NewInt(amount))
+					data, err := abiutil.GenerateMintTxData(token, recipient, big.NewInt(amount))
 					if err != nil {
 						fmt.Print("can not generate mint tx: ")
 						return err
