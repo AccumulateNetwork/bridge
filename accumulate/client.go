@@ -21,6 +21,14 @@ type Token struct {
 	Precision int64  `json:"precision"`
 }
 
+type TokenAccount struct {
+	Type     string `json:"type" validate:"required,eq=tokenAccount"`
+	KeyBook  string `json:"keyBook" validate:"required"`
+	URL      string `json:"url" validate:"required"`
+	TokenURL string `json:"tokelUrl" validate:"required"`
+	Balance  string `json:"precision" validate:"required"`
+}
+
 type DataEntry struct {
 	EntryHash string `json:"entryHash" validate:"required"`
 	Entry     struct {
@@ -61,6 +69,10 @@ type QueryADIResponse struct {
 
 type QueryTokenResponse struct {
 	Data *Token `json:"data"`
+}
+
+type QueryTokenAccountResponse struct {
+	Data *TokenAccount `json:"data"`
 }
 
 type QueryDataResponse struct {
@@ -124,6 +136,36 @@ func (c *AccumulateClient) QueryToken(token *Params) (*QueryTokenResponse, error
 	}
 
 	return tokenResp, nil
+
+}
+
+// QueryTokenAccount gets Token Account info
+func (c *AccumulateClient) QueryTokenAccount(account *Params) (*QueryTokenAccountResponse, error) {
+
+	accountResp := &QueryTokenAccountResponse{}
+
+	resp, err := c.Client.Call(context.Background(), "query", &account)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	err = resp.GetObject(accountResp)
+	if err != nil {
+		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
+	}
+
+	err = c.Validate.Struct(accountResp)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info(accountResp)
+
+	return accountResp, nil
 
 }
 

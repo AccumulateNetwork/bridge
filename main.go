@@ -86,6 +86,7 @@ func start(configFile string) {
 		// init accumulate client
 		fmt.Printf("Accumulate public key hash: %x\n", a.PublicKeyHash)
 		fmt.Println("Accumulate API:", a.API)
+		fmt.Println("Bridge ADI:", a.ADI)
 
 		// parse bridge fees
 		bridgeFeesDataAccount := conf.ACME.BridgeADI + "/" + accumulate.ACC_BRIDGE_FEES
@@ -273,6 +274,18 @@ func parseToken(a *accumulate.AccumulateClient, e *evm.EVMClient, entry *accumul
 	token.URL = t.Data.URL
 	token.Symbol = t.Data.Symbol
 	token.Precision = t.Data.Precision
+
+	// check if bridge has token account on this chain for this token
+	tokenAccountUrl, err := a.GenerateTokenAccount(global.Tokens.ChainID, token.Symbol)
+	if err != nil {
+		log.Debug("can not generate token account ", err)
+		return
+	}
+	_, err = a.QueryTokenAccount(&accumulate.Params{URL: tokenAccountUrl})
+	if err != nil {
+		log.Debug("can not get token account ", tokenAccountUrl, " from accumulate api")
+		return
+	}
 
 	// parse token info from Ethereum
 	evmT, err := e.GetERC20(token.EVMAddress)
