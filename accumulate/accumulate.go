@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	ZERO_HASH              = "0000000000000000000000000000000000000000000000000000000000000000"
 	ACC_KEYBOOK            = "book"   // bridge ADI keybook
 	ACC_LEADER             = "leader" // data account: current leader (pubkeyhash)
 	ACC_TOKEN_REGISTRY     = "tokens" // data account: token registry (accumulate token address, evm token address, evm chainid)

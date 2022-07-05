@@ -35,6 +35,26 @@ type Params struct {
 	Expand bool   `json:"expand"`
 }
 
+type CreateParams struct {
+	Origin  string `json:"origin"`
+	Sponsor string `json:"sponsor"`
+	Signer  struct {
+		PublicKey string `json:"publicKey"`
+		Nonce     int64  `json:"nonce"`
+	}
+	Signature string `json:"signature"`
+	KeyPage   struct {
+		Height int64 `json:"height"`
+	}
+	Payload []byte `json:"payload"`
+}
+
+type CreateResponse struct {
+	Hash    string `json:"hash"`
+	Txid    string `json:"txid"`
+	Message string `json:"message"`
+}
+
 type QueryADIResponse struct {
 	Data *ADI `json:"data"`
 }
@@ -161,5 +181,28 @@ func (c *AccumulateClient) QueryDataSet(dataAccount *Params) (*QueryDataSetRespo
 	}
 
 	return dataEntriesResp, nil
+
+}
+
+// Create sends tx on Accumulate
+func (c *AccumulateClient) Create(method string, tx *CreateParams) (*CreateResponse, error) {
+
+	createResp := &CreateResponse{}
+
+	resp, err := c.Client.Call(context.Background(), method, &tx)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	err = resp.GetObject(createResp)
+	if err != nil {
+		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
+	}
+
+	return createResp, nil
 
 }
