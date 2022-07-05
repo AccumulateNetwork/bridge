@@ -22,10 +22,10 @@ type Token struct {
 }
 
 type DataEntry struct {
-	EntryHash string `json:"entryHash"`
+	EntryHash string `json:"entryHash" validate:"required"`
 	Entry     struct {
-		Type string   `json:"type"`
-		Data []string `json:"data"`
+		Type string   `json:"type" validate:"required"`
+		Data []string `json:"data" validate:"gt=0,dive,required,gt=0"`
 	}
 }
 
@@ -67,7 +67,7 @@ func (c *AccumulateClient) QueryADI(token *Params) (*QueryADIResponse, error) {
 
 	err = resp.GetObject(adiResp)
 	if err != nil {
-		return nil, fmt.Errorf("can not unmarshal api response")
+		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
 	}
 
 	err = c.Validate.Struct(adiResp)
@@ -95,13 +95,11 @@ func (c *AccumulateClient) QueryToken(token *Params) (*QueryTokenResponse, error
 
 	err = resp.GetObject(tokenResp)
 	if err != nil {
-		log.Debug(err)
-		return nil, fmt.Errorf("can not unmarshal api response")
+		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
 	}
 
 	err = c.Validate.Struct(tokenResp)
 	if err != nil {
-		log.Info(err)
 		return nil, err
 	}
 
@@ -124,9 +122,13 @@ func (c *AccumulateClient) QueryLatestDataEntry(dataAccount *Params) (*QueryData
 	}
 
 	err = resp.GetObject(dataResp)
-	if err != nil || dataResp.Data.EntryHash == "" || dataResp.Data.Entry.Data[0] == "" {
-		fmt.Println(dataResp.Data)
-		return nil, fmt.Errorf("can not unmarshal api response")
+	if err != nil {
+		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
+	}
+
+	err = c.Validate.Struct(dataResp)
+	if err != nil {
+		return nil, err
 	}
 
 	return dataResp, nil
@@ -149,8 +151,13 @@ func (c *AccumulateClient) QueryDataSet(dataAccount *Params) (*QueryDataSetRespo
 
 	err = resp.GetObject(dataEntriesResp)
 	if err != nil {
-		fmt.Println(err)
-		return nil, fmt.Errorf("can not unmarshal api response")
+		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
+	}
+
+	err = c.Validate.Struct(dataEntriesResp)
+	if err != nil {
+		log.Debug(err)
+		return nil, err
 	}
 
 	return dataEntriesResp, nil
