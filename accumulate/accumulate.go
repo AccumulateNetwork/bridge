@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/AccumulateNetwork/bridge/config"
+	"github.com/go-playground/validator/v10"
 	"github.com/ybbus/jsonrpc/v3"
 )
 
 const (
+	ACC_KEYBOOK            = "book"   // bridge ADI keybook
 	ACC_LEADER             = "leader" // data account: current leader (pubkeyhash)
 	ACC_TOKEN_REGISTRY     = "tokens" // data account: token registry (accumulate token address, evm token address, evm chainid)
 	ACC_BRIDGE_FEES        = "fees"   // data account: bridge fees
@@ -21,17 +23,21 @@ const (
 
 type AccumulateClient struct {
 	API           string
-	KeyBook       string
+	ADI           string
 	PrivateKey    ed25519.PrivateKey
 	PublicKey     ed25519.PublicKey
 	PublicKeyHash []byte
 	Client        jsonrpc.RPCClient
+	Validate      *validator.Validate
 }
 
 // NewAccumulateClient constructs the Accumulate client
 func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 
 	c := &AccumulateClient{}
+
+	// init validator
+	c.Validate = validator.New()
 
 	if conf.ACME.Node == "" {
 		return nil, fmt.Errorf("received empty node from config: %s", conf.ACME.Node)
@@ -47,17 +53,19 @@ func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 
 	c.Client = jsonrpc.NewClientWithOpts(conf.ACME.Node, opts)
 
-	if conf.ACME.KeyBook == "" {
-		return nil, fmt.Errorf("received empty keyBook from config: %s", conf.ACME.KeyBook)
+	// check if config ADI is valid
+	adi, err := c.QueryADI(&Params{URL: conf.ACME.BridgeADI})
+	if err != nil {
+		return nil, err
 	}
 
-	c.KeyBook = conf.ACME.KeyBook
+	c.ADI = adi.Data.URL
 
 	if conf.ACME.PrivateKey == "" {
 		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.ACME.PrivateKey)
 	}
 
-	c, err := c.ImportPrivateKey(conf.ACME.PrivateKey)
+	c, err = c.ImportPrivateKey(conf.ACME.PrivateKey)
 	if err != nil {
 		return nil, err
 	}

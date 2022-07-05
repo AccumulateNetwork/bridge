@@ -57,6 +57,9 @@ func start(configFile string) {
 			log.Fatal(err)
 		}
 
+		// set log level
+		log.SetLevel(log.Lvl(conf.App.LogLevel))
+
 		// init gnosis client
 		if g, err = gnosis.NewGnosis(conf); err != nil {
 			log.Fatal(err)
@@ -292,7 +295,7 @@ func parseToken(a *accumulate.AccumulateClient, e *evm.EVMClient, entry *accumul
 
 	// if not found, append new token
 	if duplicateIndex == -1 {
-		fmt.Println("Added token:", token.URL)
+		log.Info("added token ", token.URL)
 		global.Tokens.Items = append(global.Tokens.Items, token)
 	}
 

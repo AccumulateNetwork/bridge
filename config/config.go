@@ -18,7 +18,6 @@ type Config struct {
 	ACME struct {
 		Node       string `required:"true" default:"" json:"node" form:"node" query:"node"`
 		BridgeADI  string `required:"true" default:"" json:"bridgeADI" form:"bridgeADI" query:"bridgeADI"`
-		KeyBook    string `required:"true" default:"" json:"keyBook" form:"keyBook" query:"keyBook"`
 		PrivateKey string `required:"true" default:"" json:"privateKey" form:"privateKey" query:"privateKey"`
 	}
 	EVM struct {
