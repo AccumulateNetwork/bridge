@@ -3,6 +3,7 @@ package accumulate
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/labstack/gommon/log"
 )
@@ -25,8 +26,8 @@ type TokenAccount struct {
 	Type     string `json:"type" validate:"required,eq=tokenAccount"`
 	KeyBook  string `json:"keyBook" validate:"required"`
 	URL      string `json:"url" validate:"required"`
-	TokenURL string `json:"tokelUrl" validate:"required"`
-	Balance  string `json:"precision" validate:"required"`
+	TokenURL string `json:"tokenUrl" validate:"required"`
+	Balance  string `json:"balance" validate:"required"`
 }
 
 type DataEntry struct {
@@ -53,6 +54,7 @@ type CreateParams struct {
 	Signature string `json:"signature"`
 	KeyPage   struct {
 		Height int64 `json:"height"`
+		Index  int64 `json:"index"`
 	}
 	Payload []byte `json:"payload"`
 }
@@ -160,6 +162,7 @@ func (c *AccumulateClient) QueryTokenAccount(account *Params) (*QueryTokenAccoun
 
 	err = c.Validate.Struct(accountResp)
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 
@@ -231,6 +234,15 @@ func (c *AccumulateClient) Create(method string, tx *CreateParams) (*CreateRespo
 
 	createResp := &CreateResponse{}
 
+	// fill signer info
+	tx.Origin = c.ADI
+	tx.Sponsor = c.ADI
+	tx.Signer.PublicKey = string(c.PublicKeyHash)
+	tx.Signer.Nonce = int64(nonceFromTimeNow())
+	tx.Signature = ""
+	tx.KeyPage.Height = 1
+	tx.KeyPage.Index = 0
+
 	resp, err := c.Client.Call(context.Background(), method, &tx)
 	if err != nil {
 		return nil, err
@@ -247,4 +259,9 @@ func (c *AccumulateClient) Create(method string, tx *CreateParams) (*CreateRespo
 
 	return createResp, nil
 
+}
+
+func nonceFromTimeNow() uint64 {
+	t := time.Now()
+	return uint64(t.Unix()*1e6) + uint64(t.Nanosecond())/1e3
 }

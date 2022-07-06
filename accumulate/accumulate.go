@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	ZERO_HASH              = "0000000000000000000000000000000000000000000000000000000000000000"
 	ACC_KEYBOOK            = "book"   // bridge ADI keybook
 	ACC_LEADER             = "leader" // data account: current leader (pubkeyhash)
 	ACC_TOKEN_REGISTRY     = "tokens" // data account: token registry (accumulate token address, evm token address, evm chainid)
@@ -99,6 +98,7 @@ func (c *AccumulateClient) ImportPrivateKey(pk string) (*AccumulateClient, error
 
 }
 
+// Generate bridge token account in format acc://{adi}/{chainId}-{symbol}
 func (c *AccumulateClient) GenerateTokenAccount(chainId int64, symbol string) (string, error) {
 
 	if c.ADI == "" {
