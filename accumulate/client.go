@@ -44,22 +44,43 @@ type Params struct {
 	Expand bool   `json:"expand"`
 }
 
-type CreateParams struct {
-	Origin  string `json:"origin"`
-	Sponsor string `json:"sponsor"`
-	Signer  struct {
-		PublicKey string `json:"publicKey"`
-		Nonce     int64  `json:"nonce"`
+type ExecuteDirect struct {
+	Envelope struct {
+		Signatures  []*Signature
+		Transaction []*Transaction
 	}
-	Signature string `json:"signature"`
-	KeyPage   struct {
-		Height int64 `json:"height"`
-		Index  int64 `json:"index"`
-	}
-	Payload []byte `json:"payload"`
 }
 
-type CreateResponse struct {
+type Signature struct {
+	Type            string `json:"type"`
+	PublicKey       string `json:"publicKey"`
+	Signature       string `json:"signature"`
+	Signer          string `json:"signer"`
+	SignerVersion   int64  `json:"signerVersion"`
+	Timestamp       int64  `json:"timestamp"`
+	TransactionHash int64  `json:"transactionHash"`
+}
+
+type Transaction struct {
+	Header struct {
+		Principal string `json:"principal"`
+		Origin    string `json:"origin"`
+		Initiator string `json:"initiator"`
+	}
+	Body []byte `json:"body"`
+}
+
+type TxSendTokens struct {
+	Type string `json:"type" default:"sendTokens"`
+	To   []*TxSendTokensTo
+}
+
+type TxSendTokensTo struct {
+	URL    string `json:"url"`
+	Amount int64  `json:"amount"`
+}
+
+type ExecuteDirectResponse struct {
 	Hash    string `json:"hash"`
 	Txid    string `json:"txid"`
 	Message string `json:"message"`
@@ -166,8 +187,6 @@ func (c *AccumulateClient) QueryTokenAccount(account *Params) (*QueryTokenAccoun
 		return nil, err
 	}
 
-	log.Info(accountResp)
-
 	return accountResp, nil
 
 }
@@ -229,21 +248,12 @@ func (c *AccumulateClient) QueryDataSet(dataAccount *Params) (*QueryDataSetRespo
 
 }
 
-// Create sends tx on Accumulate
-func (c *AccumulateClient) Create(method string, tx *CreateParams) (*CreateResponse, error) {
+// Create calls "execute-direct" tx on Accumulate
+func (c *AccumulateClient) ExecuteDirect(params *ExecuteDirect) (*ExecuteDirectResponse, error) {
 
-	createResp := &CreateResponse{}
+	callResp := &ExecuteDirectResponse{}
 
-	// fill signer info
-	tx.Origin = c.ADI
-	tx.Sponsor = c.ADI
-	tx.Signer.PublicKey = string(c.PublicKeyHash)
-	tx.Signer.Nonce = int64(nonceFromTimeNow())
-	tx.Signature = ""
-	tx.KeyPage.Height = 1
-	tx.KeyPage.Index = 0
-
-	resp, err := c.Client.Call(context.Background(), method, &tx)
+	resp, err := c.Client.Call(context.Background(), "execute-direct", &params)
 	if err != nil {
 		return nil, err
 	}
@@ -252,12 +262,12 @@ func (c *AccumulateClient) Create(method string, tx *CreateParams) (*CreateRespo
 		return nil, resp.Error
 	}
 
-	err = resp.GetObject(createResp)
+	err = resp.GetObject(callResp)
 	if err != nil {
 		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
 	}
 
-	return createResp, nil
+	return callResp, nil
 
 }
 

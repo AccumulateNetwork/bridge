@@ -270,7 +270,13 @@ func main() {
 						return err
 					}
 
-					fmt.Print(a, token, recipient, amount)
+					txhash, err := a.SendTokens(recipient, amount, token, int64(conf.EVM.ChainId))
+					if err != nil {
+						fmt.Print("tx failed: ")
+						return err
+					}
+
+					fmt.Printf("tx sent: %s", txhash)
 
 					return nil
 

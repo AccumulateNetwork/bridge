@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/AccumulateNetwork/bridge/config"
@@ -95,16 +94,5 @@ func (c *AccumulateClient) ImportPrivateKey(pk string) (*AccumulateClient, error
 	c.PublicKeyHash = publicKeyHash[:]
 
 	return c, nil
-
-}
-
-// Generate bridge token account in format acc://{adi}/{chainId}-{symbol}
-func (c *AccumulateClient) GenerateTokenAccount(chainId int64, symbol string) (string, error) {
-
-	if c.ADI == "" {
-		return "", fmt.Errorf("Client.ADI is empty")
-	}
-
-	return c.ADI + "/" + strconv.Itoa(int(chainId)) + "-" + symbol, nil
 
 }
