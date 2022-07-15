@@ -3,7 +3,9 @@ package accumulate
 import (
 	"crypto/ed25519"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 )
@@ -21,7 +23,8 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 
 	// tx
 	payload := &TxSendTokens{}
-	payload.To = append(payload.To, &TxSendTokensTo{URL: token.Data.URL, Amount: amount})
+	payload.To = append(payload.To, &TxSendTokensTo{URL: to, Amount: amount})
+	payload.Type = "sendTokens"
 
 	tx := &Transaction{}
 	body, err := json.Marshal(payload)
@@ -32,7 +35,7 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 	tx.Body = body
 	tx.Header.Principal = tokenAccount
 	tx.Header.Origin = tokenAccount
-	tx.Header.Initiator = string(c.PublicKeyHash)
+	tx.Header.Initiator = hex.EncodeToString(c.PublicKeyHash)
 
 	// tx hashes
 	txHeader, err := json.Marshal(tx.Header)
@@ -51,18 +54,21 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 	// signature
 	sig := &Signature{}
 	sig.Type = SIGNATURE_TYPE
-	sig.PublicKey = string(c.PublicKey)
+	sig.PublicKey = hex.EncodeToString(c.PublicKey)
 	sig.Signer = c.ADI + ACC_KEYBOOK + strconv.Itoa(1)
 	sig.SignerVersion = 1
 	sig.Timestamp = ts
-	sig.TransactionHash = string(txHash[:])
+	sig.TransactionHash = hex.EncodeToString(txHash[:])
 
 	sigBytes := ed25519.Sign(c.PrivateKey, []byte(txHash[:]))
-	sig.Signature = string(sigBytes)
+	sig.Signature = hex.EncodeToString(sigBytes)
 
 	e := &Envelope{}
 	e.Transaction = append(e.Transaction, tx)
 	e.Signatures = append(e.Signatures, sig)
+
+	p, _ := json.Marshal(e)
+	fmt.Printf(string(p))
 
 	resp, err := c.ExecuteDirect(e)
 	if err != nil {

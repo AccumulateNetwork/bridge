@@ -2,6 +2,7 @@ package accumulate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/labstack/gommon/log"
@@ -44,8 +45,8 @@ type Params struct {
 }
 
 type Envelope struct {
-	Signatures  []*Signature
-	Transaction []*Transaction
+	Signatures  []*Signature   `json:"signatures"`
+	Transaction []*Transaction `json:"transaction"`
 }
 
 type Signature struct {
@@ -59,17 +60,19 @@ type Signature struct {
 }
 
 type Transaction struct {
-	Header struct {
-		Principal string `json:"principal"`
-		Origin    string `json:"origin"`
-		Initiator string `json:"initiator"`
-	}
-	Body []byte `json:"body"`
+	Header TransactionHeader `json:"header"`
+	Body   json.RawMessage   `json:"body"`
+}
+
+type TransactionHeader struct {
+	Principal string `json:"principal"`
+	Origin    string `json:"origin"`
+	Initiator string `json:"initiator"`
 }
 
 type TxSendTokens struct {
-	Type string `json:"type" default:"sendTokens"`
-	To   []*TxSendTokensTo
+	Type string            `json:"type" default:"sendTokens"`
+	To   []*TxSendTokensTo `json:"to"`
 }
 
 type TxSendTokensTo struct {
