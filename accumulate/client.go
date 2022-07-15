@@ -39,9 +39,10 @@ type DataEntry struct {
 }
 
 type Params struct {
-	URL    string `json:"url"`
-	Count  int64  `json:"count"`
-	Expand bool   `json:"expand"`
+	URL      string    `json:"url"`
+	Count    int64     `json:"count"`
+	Expand   bool      `json:"expand"`
+	Envelope *Envelope `json:"envelope"`
 }
 
 type Envelope struct {
@@ -249,7 +250,7 @@ func (c *AccumulateClient) QueryDataSet(dataAccount *Params) (*QueryDataSetRespo
 }
 
 // Create calls "execute-direct" tx on Accumulate
-func (c *AccumulateClient) ExecuteDirect(params *Envelope) (*ExecuteDirectResponse, error) {
+func (c *AccumulateClient) ExecuteDirect(params *Params) (*ExecuteDirectResponse, error) {
 
 	callResp := &ExecuteDirectResponse{}
 

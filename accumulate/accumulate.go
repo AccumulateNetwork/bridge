@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	ACC_KEYBOOK            = "book"   // bridge ADI keybook
+	ACC_KEYBOOK            = "book" // bridge ADI keybook
+	ACC_KEYPAGE            = "1"
 	ACC_LEADER             = "leader" // data account: current leader (pubkeyhash)
 	ACC_TOKEN_REGISTRY     = "tokens" // data account: token registry (accumulate token address, evm token address, evm chainid)
 	ACC_BRIDGE_FEES        = "fees"   // data account: bridge fees
@@ -25,6 +26,7 @@ const (
 type AccumulateClient struct {
 	API           string
 	ADI           string
+	Signer        string
 	PrivateKey    ed25519.PrivateKey
 	PublicKey     ed25519.PublicKey
 	PublicKeyHash []byte
@@ -61,6 +63,7 @@ func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 	}
 
 	c.ADI = adi.Data.URL
+	c.Signer = c.ADI + "/" + ACC_KEYBOOK + "/" + ACC_KEYPAGE
 
 	if conf.ACME.PrivateKey == "" {
 		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.ACME.PrivateKey)

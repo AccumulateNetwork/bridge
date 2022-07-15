@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 )
 
@@ -55,7 +54,7 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 	sig := &Signature{}
 	sig.Type = SIGNATURE_TYPE
 	sig.PublicKey = hex.EncodeToString(c.PublicKey)
-	sig.Signer = c.ADI + ACC_KEYBOOK + strconv.Itoa(1)
+	sig.Signer = c.Signer
 	sig.SignerVersion = 1
 	sig.Timestamp = ts
 	sig.TransactionHash = hex.EncodeToString(txHash[:])
@@ -67,10 +66,13 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 	e.Transaction = append(e.Transaction, tx)
 	e.Signatures = append(e.Signatures, sig)
 
-	p, _ := json.Marshal(e)
-	fmt.Printf(string(p))
+	p := &Params{}
+	p.Envelope = e
 
-	resp, err := c.ExecuteDirect(e)
+	print, _ := json.Marshal(p)
+	fmt.Printf(string(print))
+
+	resp, err := c.ExecuteDirect(p)
 	if err != nil {
 		return "", err
 	}
