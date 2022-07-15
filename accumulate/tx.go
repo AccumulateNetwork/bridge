@@ -2,6 +2,7 @@ package accumulate
 
 import (
 	"crypto/ed25519"
+	"crypto/sha256"
 	"encoding/json"
 	"strconv"
 	"time"
@@ -31,7 +32,21 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 	tx.Body = body
 	tx.Header.Principal = tokenAccount
 	tx.Header.Origin = tokenAccount
-	tx.Header.Initiator = ""
+	tx.Header.Initiator = string(c.PublicKeyHash)
+
+	// tx hashes
+	txHeader, err := json.Marshal(tx.Header)
+	if err != nil {
+		return "", err
+	}
+
+	txHeaderHash := sha256.Sum256(txHeader)
+	txBodyHash := sha256.Sum256(tx.Body)
+	txDataHash := sha256.Sum256(append(txHeaderHash[:], txBodyHash[:]...))
+	txHash := sha256.Sum256(append(c.PublicKeyHash, txDataHash[:]...))
+
+	// timestamp
+	ts := int64(nonceFromTimeNow())
 
 	// signature
 	sig := &Signature{}
@@ -39,10 +54,10 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 	sig.PublicKey = string(c.PublicKey)
 	sig.Signer = c.ADI + ACC_KEYBOOK + strconv.Itoa(1)
 	sig.SignerVersion = 1
-	sig.Timestamp = int64(nonceFromTimeNow())
-	sig.TransactionHash = "123456"
+	sig.Timestamp = ts
+	sig.TransactionHash = string(txHash[:])
 
-	sigBytes := ed25519.Sign(c.PrivateKey, []byte(sig.TransactionHash))
+	sigBytes := ed25519.Sign(c.PrivateKey, []byte(txHash[:]))
 	sig.Signature = string(sigBytes)
 
 	e := &Envelope{}
