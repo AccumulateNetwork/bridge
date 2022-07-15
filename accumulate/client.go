@@ -3,7 +3,6 @@ package accumulate
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/labstack/gommon/log"
 )
@@ -44,11 +43,9 @@ type Params struct {
 	Expand bool   `json:"expand"`
 }
 
-type ExecuteDirect struct {
-	Envelope struct {
-		Signatures  []*Signature
-		Transaction []*Transaction
-	}
+type Envelope struct {
+	Signatures  []*Signature
+	Transaction []*Transaction
 }
 
 type Signature struct {
@@ -58,7 +55,7 @@ type Signature struct {
 	Signer          string `json:"signer"`
 	SignerVersion   int64  `json:"signerVersion"`
 	Timestamp       int64  `json:"timestamp"`
-	TransactionHash int64  `json:"transactionHash"`
+	TransactionHash string `json:"transactionHash"`
 }
 
 type Transaction struct {
@@ -249,7 +246,7 @@ func (c *AccumulateClient) QueryDataSet(dataAccount *Params) (*QueryDataSetRespo
 }
 
 // Create calls "execute-direct" tx on Accumulate
-func (c *AccumulateClient) ExecuteDirect(params *ExecuteDirect) (*ExecuteDirectResponse, error) {
+func (c *AccumulateClient) ExecuteDirect(params *Envelope) (*ExecuteDirectResponse, error) {
 
 	callResp := &ExecuteDirectResponse{}
 
@@ -269,9 +266,4 @@ func (c *AccumulateClient) ExecuteDirect(params *ExecuteDirect) (*ExecuteDirectR
 
 	return callResp, nil
 
-}
-
-func nonceFromTimeNow() uint64 {
-	t := time.Now()
-	return uint64(t.Unix()*1e6) + uint64(t.Nanosecond())/1e3
 }

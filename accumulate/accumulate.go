@@ -19,6 +19,7 @@ const (
 	ACC_TOKEN_REGISTRY     = "tokens" // data account: token registry (accumulate token address, evm token address, evm chainid)
 	ACC_BRIDGE_FEES        = "fees"   // data account: bridge fees
 	TOKEN_REGISTRY_VERSION = "v1"     // validate token registry data entries
+	SIGNATURE_TYPE         = "ed25519"
 )
 
 type AccumulateClient struct {

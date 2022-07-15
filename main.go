@@ -84,6 +84,7 @@ func start(configFile string) {
 		}
 
 		// init accumulate client
+		fmt.Printf("Accumulate public key: %x\n", a.PublicKey)
 		fmt.Printf("Accumulate public key hash: %x\n", a.PublicKeyHash)
 		fmt.Println("Accumulate API:", a.API)
 		fmt.Println("Bridge ADI:", a.ADI)
