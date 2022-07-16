@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -22,7 +23,7 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 
 	// tx
 	payload := &TxSendTokens{}
-	payload.To = append(payload.To, &TxSendTokensTo{URL: to, Amount: amount})
+	payload.To = append(payload.To, &TxSendTokensTo{URL: to, Amount: strconv.FormatInt(amount, 10)})
 	payload.Type = "sendTokens"
 
 	tx := &Transaction{}

@@ -78,7 +78,7 @@ type TxSendTokens struct {
 
 type TxSendTokensTo struct {
 	URL    string `json:"url"`
-	Amount int64  `json:"amount"`
+	Amount string `json:"amount"`
 }
 
 type ExecuteDirectResponse struct {
