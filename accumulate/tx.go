@@ -1,7 +1,6 @@
 package accumulate
 
 import (
-	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -20,65 +19,86 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 
 	// generate bridge token account for this token
 	tokenAccount := GenerateTokenAccount(c.ADI, chainId, token.Data.Symbol)
+	fmt.Println(tokenAccount)
 
-	// tx
+	// tx body
 	payload := &TxSendTokens{}
 	payload.To = append(payload.To, &TxSendTokensTo{URL: to, Amount: strconv.FormatInt(amount, 10)})
 	payload.Type = "sendTokens"
+	payload.Hash = ZERO_HASH
 
-	tx := &Transaction{}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return "", err
 	}
+
+	// debug
+	fmt.Println("tx body:", string(body))
+
+	// tx
+	tx := &Transaction{}
 
 	tx.Body = body
 	tx.Header.Principal = tokenAccount
 	tx.Header.Origin = tokenAccount
 	tx.Header.Initiator = hex.EncodeToString(c.PublicKeyHash)
 
-	// tx hashes
 	txHeader, err := json.Marshal(tx.Header)
 	if err != nil {
 		return "", err
 	}
 
+	// debug
+	fmt.Println("tx header:", string(txHeader))
+
+	// header, body hashes
 	txHeaderHash := sha256.Sum256(txHeader)
-	txBodyHash := sha256.Sum256(tx.Body)
-	txDataHash := sha256.Sum256(append(txHeaderHash[:], txBodyHash[:]...))
-	txHash := sha256.Sum256(append(c.PublicKeyHash, txDataHash[:]...))
+	fmt.Println("tx header hash:", hex.EncodeToString(txHeaderHash[:]))
 
-	// timestamp
-	ts := int64(nonceFromTimeNow())
+	txBodyHash := sha256.Sum256(body)
+	fmt.Println("tx body hash:", hex.EncodeToString(txBodyHash[:]))
 
-	// signature
-	sig := &Signature{}
-	sig.Type = SIGNATURE_TYPE
-	sig.PublicKey = hex.EncodeToString(c.PublicKey)
-	sig.Signer = c.Signer
-	sig.SignerVersion = 1
-	sig.Timestamp = ts
-	sig.TransactionHash = hex.EncodeToString(txHash[:])
+	// tx hash
+	sha := sha256.New()
+	sha.Write(txHeaderHash[:])
+	sha.Write(txBodyHash[:])
 
-	sigBytes := ed25519.Sign(c.PrivateKey, []byte(txHash[:]))
-	sig.Signature = hex.EncodeToString(sigBytes)
+	txHash := sha.Sum(nil)
+	fmt.Println("tx hash:", hex.EncodeToString(txHash[:]))
+	/*
 
-	e := &Envelope{}
-	e.Transaction = append(e.Transaction, tx)
-	e.Signatures = append(e.Signatures, sig)
+		// timestamp
+		ts := int64(nonceFromTimeNow())
 
-	p := &Params{}
-	p.Envelope = e
+		// signature
+		sig := &Signature{}
+		sig.Type = SIGNATURE_TYPE
+		sig.PublicKey = hex.EncodeToString(c.PublicKey)
+		sig.Signer = c.Signer
+		sig.SignerVersion = 1
+		sig.Timestamp = ts
+		sig.TransactionHash = hex.EncodeToString(txHash[:])
 
-	print, _ := json.Marshal(p)
-	fmt.Printf(string(print))
+		sigBytes := ed25519.Sign(c.PrivateKey, []byte(txHash[:]))
+		sig.Signature = hex.EncodeToString(sigBytes)
 
-	resp, err := c.ExecuteDirect(p)
-	if err != nil {
-		return "", err
-	}
+		e := &Envelope{}
+		e.Transaction = append(e.Transaction, tx)
+		e.Signatures = append(e.Signatures, sig)
 
-	return resp.Txid, nil
+		p := &Params{}
+		p.Envelope = e
+
+		print, _ := json.Marshal(p)
+		fmt.Printf(string(print))
+
+		resp, err := c.ExecuteDirect(p)
+		if err != nil {
+			return "", err
+		}
+	*/
+
+	return "", nil
 
 }
 

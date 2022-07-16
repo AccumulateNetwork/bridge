@@ -72,7 +72,8 @@ type TransactionHeader struct {
 }
 
 type TxSendTokens struct {
-	Type string            `json:"type" default:"sendTokens"`
+	Type string            `json:"type"`
+	Hash string            `json:"hash"`
 	To   []*TxSendTokensTo `json:"to"`
 }
 

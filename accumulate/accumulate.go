@@ -21,6 +21,7 @@ const (
 	ACC_BRIDGE_FEES        = "fees"   // data account: bridge fees
 	TOKEN_REGISTRY_VERSION = "v1"     // validate token registry data entries
 	SIGNATURE_TYPE         = "ed25519"
+	ZERO_HASH              = "0000000000000000000000000000000000000000000000000000000000000000"
 )
 
 type AccumulateClient struct {
