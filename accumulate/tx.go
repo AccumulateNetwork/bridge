@@ -5,8 +5,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
+	"math/big"
 	"strconv"
 	"time"
+
+	"gitlab.com/accumulatenetwork/accumulate/pkg/client/signing"
+	"gitlab.com/accumulatenetwork/accumulate/protocol"
 )
 
 func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, chainId int64) (string, error) {
@@ -18,7 +23,7 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 	}
 
 	// generate bridge token account for this token
-	tokenAccount := GenerateTokenAccount(c.ADI, chainId, token.Data.Symbol)
+	tokenAccount := GenerateTokenAccount(chainId, token.Data.Symbol)
 	fmt.Println(tokenAccount)
 
 	// tx body
@@ -100,6 +105,67 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 
 	return "", nil
 
+}
+
+func (c *AccumulateClient) SendTokens2(toADI string, toTokenAccount string, amount int64, tokenURL string, chainId int64) (string, error) {
+
+	// query token
+	token, err := c.QueryToken(&Params{URL: tokenURL})
+	if err != nil {
+		return "", err
+	}
+
+	// generate bridge token account for this token
+	fromTokenAccount := GenerateTokenAccount(chainId, token.Data.Symbol)
+	fmt.Println("token acc:", fromTokenAccount)
+
+	// tx body
+	payload := new(protocol.SendTokens)
+	url := protocol.AccountUrl(toADI, toTokenAccount)
+
+	amountBigInt := *big.NewInt(amount)
+	payload.AddRecipient(url, &amountBigInt)
+
+	env, err := c.buildEnvelope(fromTokenAccount, payload)
+	if err != nil {
+		return "", err
+	}
+
+	json, _ := json.Marshal(env)
+	fmt.Println(string(json))
+
+	return "", nil
+
+}
+
+func (c *AccumulateClient) buildEnvelope(fromTokenAccount string, payload protocol.TransactionBody) (*protocol.Envelope, error) {
+
+	signerKeyPage := protocol.AccountUrl(c.ADI, c.KeyPage)
+	from := protocol.AccountUrl(c.ADI, fromTokenAccount)
+
+	signer := new(signing.Builder)
+	signer.SetPrivateKey(c.PrivateKey)
+	signer.SetTimestampToNow()
+	signer.SetVersion(1)
+	signer.SetType(protocol.SignatureTypeED25519)
+	signer.SetUrl(signerKeyPage)
+
+	txn := new(protocol.Transaction)
+	txn.Body = payload
+	txn.Header.Principal = from
+
+	sig, err := signer.Initiate(txn)
+	if err != nil {
+		log.Println("Error : ", err.Error())
+		return nil, err
+	}
+
+	envelope := new(protocol.Envelope)
+	envelope.Transaction = append(envelope.Transaction, txn)
+	envelope.Signatures = append(envelope.Signatures, sig)
+	envelope.TxHash = append(envelope.TxHash, txn.GetHash()...)
+
+	return envelope, nil
 }
 
 func nonceFromTimeNow() uint64 {
