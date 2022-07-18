@@ -27,7 +27,7 @@ const (
 type AccumulateClient struct {
 	API           string
 	ADI           string
-	KeyPage       string
+	Signer        string
 	PrivateKey    ed25519.PrivateKey
 	PublicKey     ed25519.PublicKey
 	PublicKeyHash []byte
@@ -64,7 +64,7 @@ func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 	}
 
 	c.ADI = conf.ACME.BridgeADI
-	c.KeyPage = ACC_KEYBOOK + "/" + ACC_KEYPAGE
+	c.Signer = conf.ACME.BridgeADI + "/" + ACC_KEYBOOK + "/" + ACC_KEYPAGE
 
 	if conf.ACME.PrivateKey == "" {
 		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.ACME.PrivateKey)

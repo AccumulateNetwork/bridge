@@ -3,8 +3,8 @@ package accumulate
 import "strconv"
 
 // Generate bridge token account in format {chainId}-{symbol}
-func GenerateTokenAccount(chainId int64, symbol string) string {
+func GenerateTokenAccount(adi string, chainId int64, symbol string) string {
 
-	return strconv.Itoa(int(chainId)) + "-" + symbol
+	return adi + "/" + strconv.Itoa(int(chainId)) + "-" + symbol
 
 }

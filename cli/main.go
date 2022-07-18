@@ -233,15 +233,14 @@ func main() {
 				Usage: "Generates, signs and submits tx to release native tokens",
 				Action: func(c *cli.Context) error {
 
-					if c.NArg() != 4 {
+					if c.NArg() != 3 {
 						printReleaseHelp()
 						return nil
 					}
 
 					token := c.Args().Get(0)
-					adi := c.Args().Get(1)
-					tokenAccount := c.Args().Get(2)
-					amount, err := strconv.ParseInt(c.Args().Get(3), 10, 64)
+					to := c.Args().Get(1)
+					amount, err := strconv.ParseInt(c.Args().Get(2), 10, 64)
 					if err != nil {
 						fmt.Print("incorrect amount: ")
 						return err
@@ -271,7 +270,7 @@ func main() {
 						return err
 					}
 
-					txhash, err := a.SendTokens2(adi, tokenAccount, amount, token, int64(conf.EVM.ChainId))
+					txhash, err := a.SendTokens(to, amount, token, int64(conf.EVM.ChainId))
 					if err != nil {
 						fmt.Print("tx failed: ")
 						return err
@@ -445,7 +444,7 @@ func printEthSubmitHelp() {
 }
 
 func printReleaseHelp() {
-	fmt.Println("release [token] [recipient adi] [recipient token account] [amount]")
+	fmt.Println("release [token] [recipient] [amount]")
 }
 
 func printAccSignHelp() {
