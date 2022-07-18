@@ -1,6 +1,7 @@
 package accumulate
 
 import (
+	"encoding/hex"
 	"log"
 	"math/big"
 
@@ -9,6 +10,7 @@ import (
 	"gitlab.com/accumulatenetwork/accumulate/protocol"
 )
 
+// SendTokens generates sendTokens tx for `execute-direct` API method
 func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, chainId int64) (string, error) {
 
 	// query token
@@ -48,14 +50,41 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 
 }
 
-func (c *AccumulateClient) buildEnvelope(fromTokenAccount string, payload protocol.TransactionBody) (*protocol.Envelope, error) {
+// RemoteTransaction generates remote tx for `execute-direct` API method
+func (c *AccumulateClient) RemoteTransaction(txhash string) (string, error) {
 
-	fromUrl, err := accurl.Parse(fromTokenAccount)
+	// tx body
+	payload := new(protocol.RemoteTransaction)
+	hash, err := hex.DecodeString(txhash)
+	if err != nil {
+		return "", err
+	}
+	payload.Hash = *byte32(hash)
+
+	env, err := c.buildEnvelope(c.ADI, payload)
+	if err != nil {
+		return "", err
+	}
+
+	params := &Params{Envelope: env}
+
+	resp, err := c.ExecuteDirect(params)
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Txid, nil
+
+}
+
+func (c *AccumulateClient) buildEnvelope(from string, payload protocol.TransactionBody) (*protocol.Envelope, error) {
+
+	fromUrl, err := accurl.Parse(from)
 	if err != nil {
 		return nil, err
 	}
 
-	from := protocol.AccountUrl(fromUrl.Authority, fromUrl.Path)
+	principal := protocol.AccountUrl(fromUrl.Authority, fromUrl.Path)
 
 	signerUrl, err := accurl.Parse(c.Signer)
 	if err != nil {
@@ -73,7 +102,7 @@ func (c *AccumulateClient) buildEnvelope(fromTokenAccount string, payload protoc
 
 	txn := new(protocol.Transaction)
 	txn.Body = payload
-	txn.Header.Principal = from
+	txn.Header.Principal = principal
 
 	sig, err := signer.Initiate(txn)
 	if err != nil {
