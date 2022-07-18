@@ -1,12 +1,11 @@
 package accumulate
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"math/big"
-	"net/url"
 
+	accurl "github.com/AccumulateNetwork/bridge/url"
 	"gitlab.com/accumulatenetwork/accumulate/pkg/client/signing"
 	"gitlab.com/accumulatenetwork/accumulate/protocol"
 )
@@ -26,41 +25,46 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 	// tx body
 	payload := new(protocol.SendTokens)
 
-	url, err := url.Parse(to)
+	toUrl, err := accurl.Parse(to)
 	if err != nil {
 		return "", err
 	}
-	pUrl := protocol.AccountUrl(url.Host, url.Path)
+	accUrl := protocol.AccountUrl(toUrl.Authority, toUrl.Path)
 
 	amountBigInt := *big.NewInt(amount)
-	payload.AddRecipient(pUrl, &amountBigInt)
+	payload.AddRecipient(accUrl, &amountBigInt)
 
 	env, err := c.buildEnvelope(fromTokenAccount, payload)
 	if err != nil {
 		return "", err
 	}
 
-	json, _ := json.Marshal(env)
-	fmt.Println(string(json))
+	params := &Params{Envelope: env}
 
-	return "", nil
+	resp, err := c.ExecuteDirect(params)
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Txid, nil
 
 }
 
 func (c *AccumulateClient) buildEnvelope(fromTokenAccount string, payload protocol.TransactionBody) (*protocol.Envelope, error) {
 
-	fromUrl, err := url.Parse(fromTokenAccount)
+	fromUrl, err := accurl.Parse(fromTokenAccount)
 	if err != nil {
 		return nil, err
 	}
 
-	signerUrl, err := url.Parse(c.Signer)
+	from := protocol.AccountUrl(fromUrl.Authority, fromUrl.Path)
+
+	signerUrl, err := accurl.Parse(c.Signer)
 	if err != nil {
 		return nil, err
 	}
 
-	keypage := protocol.AccountUrl(signerUrl.Host, signerUrl.Path)
-	from := protocol.AccountUrl(fromUrl.Host, fromUrl.Path)
+	keypage := protocol.AccountUrl(signerUrl.Authority, signerUrl.Path)
 
 	signer := new(signing.Builder)
 	signer.SetPrivateKey(c.PrivateKey)
