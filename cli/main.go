@@ -319,7 +319,13 @@ func main() {
 						return err
 					}
 
-					fmt.Print(a, txid)
+					txhash, err := a.RemoteTransaction(txid)
+					if err != nil {
+						fmt.Print("tx failed: ")
+						return err
+					}
+
+					fmt.Printf("tx sent: %s", txhash)
 
 					return nil
 
