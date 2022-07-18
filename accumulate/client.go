@@ -223,8 +223,6 @@ func (c *AccumulateClient) ExecuteDirect(params *Params) (*ExecuteDirectResponse
 		return nil, err
 	}
 
-	fmt.Println(resp)
-
 	if resp.Error != nil {
 		return nil, resp.Error
 	}

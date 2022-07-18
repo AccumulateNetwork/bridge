@@ -1,7 +1,6 @@
 package accumulate
 
 import (
-	"fmt"
 	"log"
 	"math/big"
 
@@ -20,7 +19,6 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 
 	// generate bridge token account for this token
 	fromTokenAccount := GenerateTokenAccount(c.ADI, chainId, token.Data.Symbol)
-	fmt.Println("token acc:", fromTokenAccount)
 
 	// tx body
 	payload := new(protocol.SendTokens)
@@ -68,7 +66,7 @@ func (c *AccumulateClient) buildEnvelope(fromTokenAccount string, payload protoc
 
 	signer := new(signing.Builder)
 	signer.SetPrivateKey(c.PrivateKey)
-	signer.SetTimestampToNow()
+	signer.SetTimestamp(nonceFromTimeNow())
 	signer.SetVersion(3)
 	signer.SetType(protocol.SignatureTypeED25519)
 	signer.SetUrl(keypage)
