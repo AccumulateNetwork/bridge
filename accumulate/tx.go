@@ -146,7 +146,7 @@ func (c *AccumulateClient) buildEnvelope(fromTokenAccount string, payload protoc
 	signer := new(signing.Builder)
 	signer.SetPrivateKey(c.PrivateKey)
 	signer.SetTimestampToNow()
-	signer.SetVersion(1)
+	signer.SetVersion(3)
 	signer.SetType(protocol.SignatureTypeED25519)
 	signer.SetUrl(signerKeyPage)
 
