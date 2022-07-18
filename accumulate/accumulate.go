@@ -58,13 +58,13 @@ func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 	c.Client = jsonrpc.NewClientWithOpts(conf.ACME.Node, opts)
 
 	// check if config ADI is valid
-	adi, err := c.QueryADI(&Params{URL: conf.ACME.BridgeADI})
+	_, err := c.QueryADI(&Params{URL: conf.ACME.BridgeADI})
 	if err != nil {
 		return nil, err
 	}
 
-	c.ADI = adi.Data.URL
-	c.Signer = c.ADI + "/" + ACC_KEYBOOK + "/" + ACC_KEYPAGE
+	c.ADI = conf.ACME.BridgeADI
+	c.Signer = conf.ACME.BridgeADI + "/" + ACC_KEYBOOK + "/" + ACC_KEYPAGE
 
 	if conf.ACME.PrivateKey == "" {
 		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.ACME.PrivateKey)

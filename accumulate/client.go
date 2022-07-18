@@ -2,10 +2,10 @@ package accumulate
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/labstack/gommon/log"
+	"gitlab.com/accumulatenetwork/accumulate/protocol"
 )
 
 type ADI struct {
@@ -39,47 +39,10 @@ type DataEntry struct {
 }
 
 type Params struct {
-	URL      string    `json:"url"`
-	Count    int64     `json:"count"`
-	Expand   bool      `json:"expand"`
-	Envelope *Envelope `json:"envelope"`
-}
-
-type Envelope struct {
-	Signatures  []*Signature   `json:"signatures"`
-	Transaction []*Transaction `json:"transaction"`
-}
-
-type Signature struct {
-	Type            string `json:"type"`
-	PublicKey       string `json:"publicKey"`
-	Signature       string `json:"signature"`
-	Signer          string `json:"signer"`
-	SignerVersion   int64  `json:"signerVersion"`
-	Timestamp       int64  `json:"timestamp"`
-	TransactionHash string `json:"transactionHash"`
-}
-
-type Transaction struct {
-	Header TransactionHeader `json:"header"`
-	Body   json.RawMessage   `json:"body"`
-}
-
-type TransactionHeader struct {
-	Principal string `json:"principal"`
-	Origin    string `json:"origin"`
-	Initiator string `json:"initiator"`
-}
-
-type TxSendTokens struct {
-	Type string            `json:"type"`
-	Hash string            `json:"hash"`
-	To   []*TxSendTokensTo `json:"to"`
-}
-
-type TxSendTokensTo struct {
-	URL    string `json:"url"`
-	Amount string `json:"amount"`
+	URL      string             `json:"url"`
+	Count    int64              `json:"count"`
+	Expand   bool               `json:"expand"`
+	Envelope *protocol.Envelope `json:"envelope"`
 }
 
 type ExecuteDirectResponse struct {

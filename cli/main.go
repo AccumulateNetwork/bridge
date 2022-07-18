@@ -239,7 +239,7 @@ func main() {
 					}
 
 					token := c.Args().Get(0)
-					recipient := c.Args().Get(1)
+					to := c.Args().Get(1)
 					amount, err := strconv.ParseInt(c.Args().Get(2), 10, 64)
 					if err != nil {
 						fmt.Print("incorrect amount: ")
@@ -270,7 +270,7 @@ func main() {
 						return err
 					}
 
-					txhash, err := a.SendTokens(recipient, amount, token, int64(conf.EVM.ChainId))
+					txhash, err := a.SendTokens(to, amount, token, int64(conf.EVM.ChainId))
 					if err != nil {
 						fmt.Print("tx failed: ")
 						return err
