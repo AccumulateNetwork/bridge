@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/AccumulateNetwork/bridge/config"
@@ -64,7 +65,7 @@ func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 	}
 
 	c.ADI = conf.ACME.BridgeADI
-	c.Signer = conf.ACME.BridgeADI + "/" + ACC_KEYBOOK + "/" + ACC_KEYPAGE
+	c.Signer = filepath.Join(conf.ACME.BridgeADI, ACC_KEYBOOK, ACC_KEYPAGE)
 
 	if conf.ACME.PrivateKey == "" {
 		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.ACME.PrivateKey)

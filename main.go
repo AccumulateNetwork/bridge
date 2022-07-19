@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os/user"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -90,7 +91,7 @@ func start(configFile string) {
 		fmt.Println("Bridge ADI:", a.ADI)
 
 		// parse bridge fees
-		bridgeFeesDataAccount := conf.ACME.BridgeADI + "/" + accumulate.ACC_BRIDGE_FEES
+		bridgeFeesDataAccount := filepath.Join(conf.ACME.BridgeADI, accumulate.ACC_BRIDGE_FEES)
 		fmt.Println("Getting bridge fees from", bridgeFeesDataAccount)
 		fees, err := a.QueryLatestDataEntry(&accumulate.Params{URL: bridgeFeesDataAccount})
 		if err != nil {
@@ -119,7 +120,7 @@ func start(configFile string) {
 		// parse token list from Accumulate
 		// only once – when node is started
 		// token list is mandatory, so return fatal error in case of error
-		tokensDataAccount := conf.ACME.BridgeADI + "/" + accumulate.ACC_TOKEN_REGISTRY
+		tokensDataAccount := filepath.Join(conf.ACME.BridgeADI, accumulate.ACC_TOKEN_REGISTRY)
 		fmt.Println("Getting Accumulate tokens from", tokensDataAccount)
 		tokens, err := a.QueryDataSet(&accumulate.Params{URL: tokensDataAccount, Count: 1000, Expand: true})
 		if err != nil {
@@ -140,7 +141,7 @@ func start(configFile string) {
 
 		// init interval go routines
 		die := make(chan bool)
-		leaderDataAccount := conf.ACME.BridgeADI + "/" + accumulate.ACC_LEADER
+		leaderDataAccount := filepath.Join(conf.ACME.BridgeADI, accumulate.ACC_LEADER)
 		go getLeader(a, leaderDataAccount, die) // every minute
 
 		// init Accumulate Bridge API

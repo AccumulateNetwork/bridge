@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"os"
 	"os/user"
+	"path/filepath"
 	"sort"
 	"strconv"
 
@@ -409,7 +410,7 @@ func main() {
 					content = append(content, []byte(accumulate.TOKEN_REGISTRY_VERSION))
 					content = append(content, tokenBytes)
 
-					dataAccount := a.ADI + "/" + accumulate.ACC_TOKEN_REGISTRY
+					dataAccount := filepath.Join(a.ADI, accumulate.ACC_TOKEN_REGISTRY)
 
 					txhash, err := a.WriteData(dataAccount, content)
 					if err != nil {
@@ -485,7 +486,7 @@ func main() {
 					var content [][]byte
 					content = append(content, feesBytes)
 
-					dataAccount := a.ADI + "/" + accumulate.ACC_BRIDGE_FEES
+					dataAccount := filepath.Join(a.ADI, accumulate.ACC_BRIDGE_FEES)
 
 					txhash, err := a.WriteData(dataAccount, content)
 					if err != nil {
@@ -544,7 +545,7 @@ func main() {
 					var content [][]byte
 					content = append(content, leaderBytes)
 
-					dataAccount := a.ADI + "/" + accumulate.ACC_LEADER
+					dataAccount := filepath.Join(a.ADI, accumulate.ACC_LEADER)
 
 					txhash, err := a.WriteData(dataAccount, content)
 					if err != nil {
