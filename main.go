@@ -278,10 +278,10 @@ func parseToken(a *accumulate.AccumulateClient, e *evm.EVMClient, entry *accumul
 
 	// check if bridge has token account on this chain for this token
 	tokenAccountUrl := accumulate.GenerateTokenAccount(a.ADI, global.Tokens.ChainID, token.Symbol)
-	_, err = a.QueryTokenAccount(&accumulate.Params{URL: a.ADI + "/" + tokenAccountUrl})
+	_, err = a.QueryTokenAccount(&accumulate.Params{URL: tokenAccountUrl})
 	if err != nil {
 		log.Debug("can not get token account ", tokenAccountUrl, " from accumulate api")
-		//return
+		return
 	}
 
 	// parse token info from Ethereum
