@@ -428,6 +428,65 @@ func main() {
 
 				},
 			},
+			{
+				Name:  "set-leader",
+				Usage: "Generates accumulate data entry for bridge leader",
+				Action: func(c *cli.Context) error {
+
+					if c.NArg() != 1 {
+						printSetLeaderHelp()
+						return nil
+					}
+
+					leader := c.Args().Get(0)
+
+					var conf *config.Config
+					var err error
+					configFile := c.String("config")
+
+					if configFile == "" {
+						usr, err := user.Current()
+						if err != nil {
+							return err
+						}
+						configFile = usr.HomeDir + "/.accumulatebridge/config.yaml"
+					}
+
+					fmt.Printf("using config: %s\n", configFile)
+
+					if conf, err = config.NewConfig(configFile); err != nil {
+						fmt.Print("can not load config: ")
+						return err
+					}
+
+					a, err := accumulate.NewAccumulateClient(conf)
+					if err != nil {
+						fmt.Print("can not init accumulate client: ")
+						return err
+					}
+
+					leaderBytes, err := hex.DecodeString(leader)
+					if err != nil {
+						fmt.Print(err)
+					}
+
+					var content [][]byte
+					content = append(content, leaderBytes)
+
+					dataAccount := a.ADI + "/" + accumulate.ACC_LEADER
+
+					txhash, err := a.WriteData(dataAccount, content)
+					if err != nil {
+						fmt.Print("tx failed: ")
+						return err
+					}
+
+					fmt.Printf("tx sent: %s", txhash)
+
+					return nil
+
+				},
+			},
 		},
 	}
 
@@ -463,4 +522,8 @@ func printTokenRegisterHelp() {
 
 func printUpdateFeesHelp() {
 	fmt.Println("update-fees [mint fee (bps)] [burn fee (bps)]")
+}
+
+func printSetLeaderHelp() {
+	fmt.Println("set-leader [public key hash]")
 }

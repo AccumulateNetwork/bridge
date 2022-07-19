@@ -46,7 +46,7 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 		return "", err
 	}
 
-	return resp.Txid, nil
+	return resp.Hash, nil
 
 }
 
@@ -73,7 +73,33 @@ func (c *AccumulateClient) RemoteTransaction(txhash string) (string, error) {
 		return "", err
 	}
 
-	return resp.Txid, nil
+	return resp.Hash, nil
+
+}
+
+// WriteData generates writeData tx for `execute-direct` API method
+func (c *AccumulateClient) WriteData(dataAccount string, content [][]byte) (string, error) {
+
+	// tx body
+	entry := new(protocol.AccumulateDataEntry)
+	entry.Data = content
+
+	payload := new(protocol.WriteData)
+	payload.Entry = entry
+
+	env, err := c.buildEnvelope(dataAccount, payload)
+	if err != nil {
+		return "", err
+	}
+
+	params := &Params{Envelope: env}
+
+	resp, err := c.ExecuteDirect(params)
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Hash, nil
 
 }
 
