@@ -332,8 +332,10 @@ func main() {
 				},
 			},
 			{
+				// CLI only supports single network/chainid generation
+				// Need to upgrade this method after the bridge switches to multiple networks
 				Name:  "token-register",
-				Usage: "Generates accumulate data entry for token register",
+				Usage: "Generates and submits accumulate data entry for token register",
 				Flags: []cli.Flag{
 					&cli.BoolFlag{Name: "disable"},
 				},
@@ -349,7 +351,30 @@ func main() {
 					evmTokenContract := c.Args().Get(2)
 					evmMintTxCostString := c.Args().Get(3)
 
+					var conf *config.Config
 					var err error
+					configFile := c.String("config")
+
+					if configFile == "" {
+						usr, err := user.Current()
+						if err != nil {
+							return err
+						}
+						configFile = usr.HomeDir + "/.accumulatebridge/config.yaml"
+					}
+
+					fmt.Printf("using config: %s\n", configFile)
+
+					if conf, err = config.NewConfig(configFile); err != nil {
+						fmt.Print("can not load config: ")
+						return err
+					}
+
+					a, err := accumulate.NewAccumulateClient(conf)
+					if err != nil {
+						fmt.Print("can not init accumulate client: ")
+						return err
+					}
 
 					evmChainId, err := strconv.Atoi(evmChainIdString)
 					if err != nil {
@@ -380,7 +405,19 @@ func main() {
 						fmt.Print(err)
 					}
 
-					fmt.Println(hex.EncodeToString(tokenBytes))
+					var content [][]byte
+					content = append(content, []byte(accumulate.TOKEN_REGISTRY_VERSION))
+					content = append(content, tokenBytes)
+
+					dataAccount := a.ADI + "/" + accumulate.ACC_TOKEN_REGISTRY
+
+					txhash, err := a.WriteData(dataAccount, content)
+					if err != nil {
+						fmt.Print("tx failed: ")
+						return err
+					}
+
+					fmt.Printf("tx sent: %s", txhash)
 
 					return nil
 
