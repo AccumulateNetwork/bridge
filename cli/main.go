@@ -388,7 +388,7 @@ func main() {
 			},
 			{
 				Name:  "update-fees",
-				Usage: "Generates accumulate data entry for bridge fees",
+				Usage: "Generates and submits accumulate data entry for bridge fees",
 				Action: func(c *cli.Context) error {
 
 					if c.NArg() != 2 {
@@ -399,7 +399,30 @@ func main() {
 					mintFeeString := c.Args().Get(0)
 					burnFeeString := c.Args().Get(1)
 
+					var conf *config.Config
 					var err error
+					configFile := c.String("config")
+
+					if configFile == "" {
+						usr, err := user.Current()
+						if err != nil {
+							return err
+						}
+						configFile = usr.HomeDir + "/.accumulatebridge/config.yaml"
+					}
+
+					fmt.Printf("using config: %s\n", configFile)
+
+					if conf, err = config.NewConfig(configFile); err != nil {
+						fmt.Print("can not load config: ")
+						return err
+					}
+
+					a, err := accumulate.NewAccumulateClient(conf)
+					if err != nil {
+						fmt.Print("can not init accumulate client: ")
+						return err
+					}
 
 					mintFee, err := strconv.Atoi(mintFeeString)
 					if err != nil {
@@ -422,7 +445,18 @@ func main() {
 						fmt.Print(err)
 					}
 
-					fmt.Println(hex.EncodeToString(feesBytes))
+					var content [][]byte
+					content = append(content, feesBytes)
+
+					dataAccount := a.ADI + "/" + accumulate.ACC_BRIDGE_FEES
+
+					txhash, err := a.WriteData(dataAccount, content)
+					if err != nil {
+						fmt.Print("tx failed: ")
+						return err
+					}
+
+					fmt.Printf("tx sent: %s", txhash)
 
 					return nil
 
@@ -430,7 +464,7 @@ func main() {
 			},
 			{
 				Name:  "set-leader",
-				Usage: "Generates accumulate data entry for bridge leader",
+				Usage: "Generates and submits accumulate data entry for bridge leader",
 				Action: func(c *cli.Context) error {
 
 					if c.NArg() != 1 {

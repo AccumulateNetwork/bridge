@@ -46,7 +46,7 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 		return "", err
 	}
 
-	return resp.Hash, nil
+	return resp.Txid, nil
 
 }
 
@@ -73,7 +73,7 @@ func (c *AccumulateClient) RemoteTransaction(txhash string) (string, error) {
 		return "", err
 	}
 
-	return resp.Hash, nil
+	return resp.Txid, nil
 
 }
 
@@ -99,7 +99,7 @@ func (c *AccumulateClient) WriteData(dataAccount string, content [][]byte) (stri
 		return "", err
 	}
 
-	return resp.Hash, nil
+	return resp.Txid, nil
 
 }
 
