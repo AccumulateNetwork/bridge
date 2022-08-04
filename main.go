@@ -179,7 +179,8 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 					if !global.IsLeader {
 						if global.LeaderDuration <= global.LEADER_MIN_DURATION {
 							fmt.Println("[leader] This node is leader, confirmations:", global.LeaderDuration, "of", global.LEADER_MIN_DURATION)
-						} else {
+						}
+						if global.LeaderDuration >= global.LEADER_MIN_DURATION {
 							global.IsLeader = true
 						}
 					}
