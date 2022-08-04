@@ -142,7 +142,8 @@ func start(configFile string) {
 		// init interval go routines
 		die := make(chan bool)
 		leaderDataAccount := filepath.Join(conf.ACME.BridgeADI, accumulate.ACC_LEADER)
-		go getLeader(a, leaderDataAccount, die) // every minute
+		go getLeader(a, leaderDataAccount, die)
+		go debugLeader(die)
 
 		// init Accumulate Bridge API
 		fmt.Println("Starting Accumulate Bridge API at port", conf.App.APIPort)
@@ -164,21 +165,27 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 			if err != nil {
 				fmt.Println("[leader]", err)
 				global.IsLeader = false
+				global.LeaderDuration = 0
 			} else {
 				fmt.Println("[leader] Bridge leader:", leaderData.Data.Entry.Data[0])
 				decodedLeader, err := hex.DecodeString(leaderData.Data.Entry.Data[0])
 				if err != nil {
 					fmt.Println(err)
 					global.IsLeader = false
+					global.LeaderDuration = 0
 				}
 				if bytes.Equal(decodedLeader, a.PublicKeyHash) {
+					global.LeaderDuration++
 					if !global.IsLeader {
-						// print this message only on the first run or when node becomes leader
-						fmt.Println("[leader] THIS NODE IS LEADER")
+						if global.LeaderDuration <= global.LEADER_MIN_DURATION {
+							fmt.Println("[leader] This node is leader, confirmations:", global.LeaderDuration, "of", global.LEADER_MIN_DURATION)
+						} else {
+							global.IsLeader = true
+						}
 					}
-					global.IsLeader = true
 				} else {
 					global.IsLeader = false
+					global.LeaderDuration = 0
 				}
 			}
 
@@ -308,6 +315,25 @@ func parseToken(a *accumulate.AccumulateClient, e *evm.EVMClient, entry *accumul
 	if duplicateIndex == -1 {
 		log.Info("added token ", token.URL)
 		global.Tokens.Items = append(global.Tokens.Items, token)
+	}
+
+}
+
+// debugLeader helps to debug leader behaviour
+func debugLeader(die chan bool) {
+
+	for {
+
+		select {
+		default:
+
+			log.Debug("isLeader=", global.IsLeader)
+			time.Sleep(time.Duration(5) * time.Second)
+
+		case <-die:
+			return
+		}
+
 	}
 
 }
