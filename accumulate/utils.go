@@ -3,20 +3,17 @@ package accumulate
 import (
 	"path/filepath"
 	"strconv"
-	"time"
 	"unsafe"
 )
 
 // Generate bridge token account in format {chainId}-{symbol}
 func GenerateTokenAccount(adi string, chainId int64, symbol string) string {
-
 	return filepath.Join(adi, strconv.Itoa(int(chainId))+"-"+symbol)
-
 }
 
-func nonceFromTimeNow() uint64 {
-	t := time.Now()
-	return uint64(t.Unix()*1e6) + uint64(t.Nanosecond())/1e3
+// Generate bridge data account in format {chainId}:{action}
+func GenerateDataAccount(adi string, chainId int64, action string) string {
+	return filepath.Join(adi, strconv.Itoa(int(chainId))+":"+action)
 }
 
 func byte32(s []byte) (a *[32]byte) {

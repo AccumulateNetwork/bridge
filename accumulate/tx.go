@@ -121,7 +121,7 @@ func (c *AccumulateClient) buildEnvelope(from string, payload protocol.Transacti
 
 	signer := new(signing.Builder)
 	signer.SetPrivateKey(c.PrivateKey)
-	signer.SetTimestamp(nonceFromTimeNow())
+	signer.SetTimestampToNow()
 	signer.SetVersion(3)
 	signer.SetType(protocol.SignatureTypeED25519)
 	signer.SetUrl(keypage)
