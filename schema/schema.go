@@ -37,3 +37,14 @@ type Token struct {
 	EVMDecimals   int64  `json:"evmDecimals"`
 	EVMMintTxCost int64  `json:"evmMintTxCost"`
 }
+
+// BurnEvent is an event of token burns
+type BurnEvent struct {
+	EVMTxID      string `json:"evmTxID"`
+	BlockHeight  int64  `json:"blockHeight"`
+	TokenAddress string `json:"tokenAddress"`
+	Amount       int64  `json:"amount"`
+	Destination  string `json:"destination"`
+	TokenURL     string `json:"-"`
+	TxHash       string `json:"txHash"`
+}

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"os/user"
 	"path/filepath"
-	"strings"
 	"time"
 
+	"github.com/AccumulateNetwork/bridge/abiutil"
 	"github.com/AccumulateNetwork/bridge/accumulate"
 	"github.com/AccumulateNetwork/bridge/api"
 	"github.com/AccumulateNetwork/bridge/config"
@@ -18,10 +18,14 @@ import (
 	"github.com/AccumulateNetwork/bridge/global"
 	"github.com/AccumulateNetwork/bridge/gnosis"
 	"github.com/AccumulateNetwork/bridge/schema"
+	acmeurl "github.com/AccumulateNetwork/bridge/url"
+	"github.com/AccumulateNetwork/bridge/utils"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/gommon/log"
 )
+
+const LEADER_MIN_DURATION = 2
 
 func main() {
 
@@ -143,7 +147,8 @@ func start(configFile string) {
 		die := make(chan bool)
 		leaderDataAccount := filepath.Join(conf.ACME.BridgeADI, accumulate.ACC_LEADER)
 		go getLeader(a, leaderDataAccount, die)
-		go debugLeader(die)
+		// go debugLeader(die)
+		go processBurnEvents(a, e, conf.EVM.BridgeAddress, die)
 
 		// init Accumulate Bridge API
 		fmt.Println("Starting Accumulate Bridge API at port", conf.App.APIPort)
@@ -177,10 +182,10 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 				if bytes.Equal(decodedLeader, a.PublicKeyHash) {
 					global.LeaderDuration++
 					if !global.IsLeader {
-						if global.LeaderDuration <= global.LEADER_MIN_DURATION {
-							fmt.Println("[leader] This node is leader, confirmations:", global.LeaderDuration, "of", global.LEADER_MIN_DURATION)
+						if global.LeaderDuration <= LEADER_MIN_DURATION {
+							fmt.Println("[leader] This node is leader, confirmations:", global.LeaderDuration, "of", LEADER_MIN_DURATION)
 						}
-						if global.LeaderDuration >= global.LEADER_MIN_DURATION {
+						if global.LeaderDuration >= LEADER_MIN_DURATION {
 							global.IsLeader = true
 						}
 					}
@@ -301,22 +306,18 @@ func parseToken(a *accumulate.AccumulateClient, e *evm.EVMClient, entry *accumul
 	token.EVMSymbol = evmT.Symbol
 	token.EVMDecimals = evmT.Decimals
 
-	duplicateIndex := -1
-
 	// check for duplicates, if found override
-	for i, item := range global.Tokens.Items {
-		if strings.EqualFold(item.URL, token.URL) {
-			log.Info("duplicate token ", token.URL, ", overwritten")
-			duplicateIndex = i
-			global.Tokens.Items[i] = token
-		}
-	}
+	exists := utils.SearchAccumulateToken(token.URL)
 
 	// if not found, append new token
-	if duplicateIndex == -1 {
+	if exists == nil {
 		log.Info("added token ", token.URL)
 		global.Tokens.Items = append(global.Tokens.Items, token)
+		return
 	}
+
+	log.Info("duplicate token ", token.URL, ", overwritten")
+	*exists = *token
 
 }
 
@@ -330,6 +331,184 @@ func debugLeader(die chan bool) {
 
 			log.Debug("isLeader=", global.IsLeader)
 			time.Sleep(time.Duration(5) * time.Second)
+
+		case <-die:
+			return
+		}
+
+	}
+
+}
+
+// processBurnEvents
+func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge string, die chan bool) {
+
+	for {
+
+		select {
+		default:
+
+			if global.IsLeader {
+
+				start := int64(0)
+				// start from latest block+1
+				// TO DO: get the latest blockheight from Accumulate
+
+				fmt.Println("[burn] Parsing new EVM events for", bridge)
+				logs, err := e.ParseBridgeLogs("Burn", bridge, start)
+				if err != nil {
+					log.Error(err)
+				}
+
+				// logs are sorted by timestamp asc
+				for _, log := range logs {
+
+					// create burnEntry
+					burnEntry := &schema.BurnEvent{}
+					burnEntry.EVMTxID = log.TxID.Hex()
+					burnEntry.BlockHeight = int64(log.BlockHeight)
+					burnEntry.TokenAddress = log.Token.String()
+					burnEntry.Destination = log.Destination
+					burnEntry.Amount = log.Amount.Int64()
+
+					// find token
+					token := utils.SearchEVMToken(burnEntry.TokenAddress)
+
+					// skip if no token found
+					if token == nil {
+						continue
+					}
+
+					fmt.Println("Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
+
+					// generate accumulate token tx
+					txhash, err := a.SendTokens(burnEntry.Destination, burnEntry.Amount, token.URL, int64(e.ChainId))
+					if err != nil {
+						fmt.Println("tx failed:", err)
+						continue
+					}
+
+					fmt.Println("tx sent:", txhash)
+
+					burnEntry.TxHash = txhash
+
+					burnEntryBytes, err := json.Marshal(burnEntry)
+					if err != nil {
+						fmt.Println("can not marshal burn entry:", err)
+						continue
+					}
+
+					var content [][]byte
+					content = append(content, []byte(accumulate.RELEASE_QUEUE_VERSION))
+					content = append(content, burnEntryBytes)
+
+					entryhash, err := a.WriteData(accumulate.GenerateDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_RELEASE_QUEUE), content)
+					if err != nil {
+						fmt.Println("data entry creation failed:", err)
+						continue
+					}
+
+					fmt.Println("data entry created:", entryhash)
+
+				}
+
+			} else {
+
+				dataAccountUrl := accumulate.GenerateDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_RELEASE_QUEUE) + "#pending/0:1000"
+				dataAccount := &accumulate.Params{URL: dataAccountUrl}
+
+				dataSet, err := a.QueryTxHistory(dataAccount)
+				if err != nil {
+					fmt.Println("can not get pending data entries:", err)
+				}
+
+				for _, entry := range dataSet.Items {
+
+					burnEntry := &schema.BurnEvent{}
+
+					// check version
+					if len(entry.Data.Entry.Data) < 2 {
+						fmt.Println("looking for at least 2 data fields in entry, found", len(entry.Data.Entry.Data))
+						continue
+					}
+
+					version, err := hex.DecodeString(entry.Data.Entry.Data[0])
+					if err != nil {
+						fmt.Println("can not decode entry data")
+						continue
+					}
+
+					if !bytes.Equal(version, []byte(accumulate.RELEASE_QUEUE_VERSION)) {
+						fmt.Println("entry version is not ", accumulate.RELEASE_QUEUE_VERSION)
+						continue
+					}
+
+					// convert entry data to bytes
+					burnEventBytes, err := hex.DecodeString(entry.Data.Entry.Data[1])
+					if err != nil {
+						fmt.Println("can not decode entry data")
+						continue
+					}
+
+					// try to unmarshal the entry
+					err = json.Unmarshal(burnEventBytes, burnEntry)
+					if err != nil {
+						fmt.Println("unable to unmarshal entry data")
+						continue
+					}
+
+					// find token
+					token := utils.SearchEVMToken(burnEntry.TokenAddress)
+
+					// skip if no token found
+					if token == nil {
+						continue
+					}
+
+					fmt.Println("New pending tx:", burnEntry.TxHash, "- Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
+					fmt.Println("Checking corresponding EVM tx:", burnEntry.EVMTxID)
+
+					evmTx, err := e.GetTx(burnEntry.EVMTxID)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+
+					// parse accumulate txid
+					tx, err := acmeurl.ParseTxID(burnEntry.TxHash)
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+
+					remoteTxHash := tx.Hash()
+
+					// TO DO: validate input data
+					abiutil.UnpackBurnTxInputData(evmTx.Data)
+
+					// sign accumulate tx
+					txhash, err := a.RemoteTransaction(hex.EncodeToString(remoteTxHash[:]))
+					if err != nil {
+						fmt.Println("tx failed:", err)
+						continue
+					}
+
+					fmt.Println("tx sent:", txhash)
+
+					// sign data entry
+					txhash, err = a.RemoteTransaction(entry.TxHash)
+					if err != nil {
+						fmt.Println("tx failed:", err)
+						continue
+					}
+
+					fmt.Println("tx sent:", txhash)
+
+				}
+
+			}
+
+			time.Sleep(time.Duration(30) * time.Second)
 
 		case <-die:
 			return

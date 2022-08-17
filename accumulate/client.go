@@ -71,6 +71,15 @@ type QueryDataSetResponse struct {
 	Items []*DataEntry `json:"items"`
 }
 
+type QueryTxHistory struct {
+	Items []*TxHistoryItem `json:"items"`
+}
+
+type TxHistoryItem struct {
+	TxHash string     `json:"transactionHash"`
+	Data   *DataEntry `json:"data"`
+}
+
 // QueryADI gets Token info
 func (c *AccumulateClient) QueryADI(token *Params) (*QueryADIResponse, error) {
 
@@ -156,7 +165,36 @@ func (c *AccumulateClient) QueryTokenAccount(account *Params) (*QueryTokenAccoun
 
 }
 
-// QueryData gets Token info
+// QueryTxHistory gets tx history of account
+func (c *AccumulateClient) QueryTxHistory(account *Params) (*QueryTxHistory, error) {
+
+	historyResp := &QueryTxHistory{}
+
+	resp, err := c.Client.Call(context.Background(), "query", &account)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	err = resp.GetObject(historyResp)
+	if err != nil {
+		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
+	}
+
+	err = c.Validate.Struct(historyResp)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return historyResp, nil
+
+}
+
+// QueryLatestDataEntry gets latest data entry from data account
 func (c *AccumulateClient) QueryLatestDataEntry(dataAccount *Params) (*QueryDataResponse, error) {
 
 	dataResp := &QueryDataResponse{}
@@ -226,6 +264,10 @@ func (c *AccumulateClient) ExecuteDirect(params *Params) (*ExecuteDirectResponse
 	if resp.Error != nil {
 		return nil, resp.Error
 	}
+
+	// debug
+	// p, _ := json.Marshal(resp)
+	// fmt.Println(string(p))
 
 	err = resp.GetObject(callResp)
 	if err != nil {
