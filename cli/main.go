@@ -559,6 +559,82 @@ func main() {
 
 				},
 			},
+			{
+				Name:  "set-release-height",
+				Usage: "Generates and submits accumulate data entry for release queue",
+				Action: func(c *cli.Context) error {
+
+					if c.NArg() != 2 {
+						printSetReleaseHeightHelp()
+						return nil
+					}
+
+					chainIdString := c.Args().Get(0)
+					blockHeightString := c.Args().Get(1)
+
+					var conf *config.Config
+					var err error
+					configFile := c.String("config")
+
+					if configFile == "" {
+						usr, err := user.Current()
+						if err != nil {
+							return err
+						}
+						configFile = usr.HomeDir + "/.accumulatebridge/config.yaml"
+					}
+
+					fmt.Printf("using config: %s\n", configFile)
+
+					if conf, err = config.NewConfig(configFile); err != nil {
+						fmt.Print("can not load config: ")
+						return err
+					}
+
+					a, err := accumulate.NewAccumulateClient(conf)
+					if err != nil {
+						fmt.Print("can not init accumulate client: ")
+						return err
+					}
+
+					chainId, err := strconv.Atoi(chainIdString)
+					if err != nil {
+						fmt.Print("chainId must be a number")
+						return err
+					}
+
+					blockHeight, err := strconv.Atoi(blockHeightString)
+					if err != nil {
+						fmt.Print("blockHeight must be a number")
+						return err
+					}
+
+					entry := &schema.BurnEvent{}
+					entry.BlockHeight = int64(blockHeight)
+
+					entryBytes, err := json.Marshal(entry)
+					if err != nil {
+						fmt.Print(err)
+					}
+
+					var content [][]byte
+					content = append(content, []byte(accumulate.RELEASE_QUEUE_VERSION))
+					content = append(content, entryBytes)
+
+					dataAccount := accumulate.GenerateDataAccount(a.ADI, int64(chainId), accumulate.ACC_RELEASE_QUEUE)
+
+					txhash, err := a.WriteData(dataAccount, content)
+					if err != nil {
+						fmt.Print("tx failed: ")
+						return err
+					}
+
+					fmt.Printf("tx sent: %s", txhash)
+
+					return nil
+
+				},
+			},
 		},
 	}
 
@@ -594,6 +670,10 @@ func printTokenRegisterHelp() {
 
 func printUpdateFeesHelp() {
 	fmt.Println("update-fees [mint fee (bps)] [burn fee (bps)]")
+}
+
+func printSetReleaseHeightHelp() {
+	fmt.Println("set-release-height [evm chain id] [evm blockheight]")
 }
 
 func printSetLeaderHelp() {
