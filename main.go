@@ -352,7 +352,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 		select {
 		default:
 
-			time.Sleep(time.Duration(5) * time.Second)
+			time.Sleep(time.Duration(60) * time.Second)
 
 			releaseQueue := accumulate.GenerateDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_RELEASE_QUEUE)
 
@@ -447,23 +447,28 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 
 					fmt.Println("[release] data entry created:", entryhash)
 
-					log.Fatal("HERE")
-
 				}
 
 			} else if global.IsAudit {
 
 				fmt.Println("[release] Checking pending chain of", releaseQueue)
 
-				dataAccountUrl := releaseQueue + "#pending"
-				dataAccount := &accumulate.Params{URL: dataAccountUrl}
-
-				dataSet, err := a.QueryTxHistory(dataAccount)
+				pending, err := a.QueryPendingChain(&accumulate.Params{URL: releaseQueue})
 				if err != nil {
 					fmt.Println("[release] can not get pending data entries:", err)
+					break
 				}
 
-				for _, entry := range dataSet.Items {
+				for _, entryhash := range pending.Items {
+
+					fmt.Println("[release] processing pending entry", entryhash)
+
+					entryURL := entryhash + "@" + releaseQueue
+					entry, err := a.QueryDataEntry(&accumulate.Params{URL: entryURL})
+					if err != nil {
+						fmt.Println("[release]", err)
+						continue
+					}
 
 					burnEntry, err := schema.ParseBurnEvent(entry.Data)
 					if err != nil {
@@ -510,7 +515,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 					fmt.Println("[release] tx sent:", txhash)
 
 					// sign data entry
-					txhash, err = a.RemoteTransaction(entry.TxHash)
+					txhash, err = a.RemoteTransaction(entryhash)
 					if err != nil {
 						fmt.Println("[release] tx failed:", err)
 						continue

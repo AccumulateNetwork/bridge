@@ -16,6 +16,16 @@ func GenerateDataAccount(adi string, chainId int64, action string) string {
 	return filepath.Join(adi, strconv.Itoa(int(chainId))+":"+action)
 }
 
+// Generate pending chain in format {account}#pending
+func GeneratePendingChain(account string) string {
+	return filepath.Join(account + "#pending")
+}
+
+// Generate data entry in format {entryhash}@{account}
+func GenerateDataEntry(account string, entryhash string) string {
+	return filepath.Join(entryhash + "@" + account)
+}
+
 func byte32(s []byte) (a *[32]byte) {
 	if len(a) <= len(s) {
 		a = (*[len(a)]byte)(unsafe.Pointer(&s[0]))

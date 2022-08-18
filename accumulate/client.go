@@ -226,6 +226,34 @@ func (c *AccumulateClient) QueryLatestDataEntry(dataAccount *Params) (*QueryData
 
 }
 
+// QueryLatestDataEntry gets latest data entry from data account
+func (c *AccumulateClient) QueryDataEntry(dataAccount *Params) (*QueryDataResponse, error) {
+
+	dataResp := &QueryDataResponse{}
+
+	resp, err := c.Client.Call(context.Background(), "query", &dataAccount)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	err = resp.GetObject(dataResp)
+	if err != nil {
+		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
+	}
+
+	err = c.Validate.StructExcept(dataResp, "Data.EntryHash")
+	if err != nil {
+		return nil, err
+	}
+
+	return dataResp, nil
+
+}
+
 // QueryDataSet gets data entries from data account
 func (c *AccumulateClient) QueryDataSet(dataAccount *Params) (*QueryDataSetResponse, error) {
 
@@ -259,7 +287,7 @@ func (c *AccumulateClient) QueryDataSet(dataAccount *Params) (*QueryDataSetRespo
 func (c *AccumulateClient) QueryPendingChain(account *Params) (*QueryPendingChainResponse, error) {
 
 	pendingResp := &QueryPendingChainResponse{}
-	account.URL += "#pending"
+	account.URL = GeneratePendingChain(account.URL)
 
 	resp, err := c.Client.Call(context.Background(), "query", &account)
 	if err != nil {
