@@ -71,6 +71,10 @@ type QueryDataSetResponse struct {
 	Items []*DataEntry `json:"items"`
 }
 
+type QueryPendingChainResponse struct {
+	Items []string `json:"items"`
+}
+
 type QueryTxHistory struct {
 	Items []*TxHistoryItem `json:"items"`
 }
@@ -248,6 +252,36 @@ func (c *AccumulateClient) QueryDataSet(dataAccount *Params) (*QueryDataSetRespo
 	}
 
 	return dataEntriesResp, nil
+
+}
+
+// QueryPendingChain gets data pending data from data or token account
+func (c *AccumulateClient) QueryPendingChain(account *Params) (*QueryPendingChainResponse, error) {
+
+	pendingResp := &QueryPendingChainResponse{}
+	account.URL += "#pending"
+
+	resp, err := c.Client.Call(context.Background(), "query", &account)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	err = resp.GetObject(pendingResp)
+	if err != nil {
+		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
+	}
+
+	err = c.Validate.Struct(pendingResp)
+	if err != nil {
+		log.Debug(err)
+		return nil, err
+	}
+
+	return pendingResp, nil
 
 }
 
