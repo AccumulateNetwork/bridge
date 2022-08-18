@@ -170,6 +170,7 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 			if err != nil {
 				fmt.Println("[leader]", err)
 				global.IsLeader = false
+				global.IsAudit = false
 				global.LeaderDuration = 0
 			} else {
 				fmt.Println("[leader] Bridge leader:", leaderData.Data.Entry.Data[0])
@@ -177,9 +178,11 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 				if err != nil {
 					fmt.Println(err)
 					global.IsLeader = false
+					global.IsAudit = false
 					global.LeaderDuration = 0
 				}
 				if bytes.Equal(decodedLeader, a.PublicKeyHash) {
+					global.IsAudit = false
 					global.LeaderDuration++
 					if !global.IsLeader {
 						if global.LeaderDuration <= LEADER_MIN_DURATION {
@@ -191,6 +194,7 @@ func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die cha
 					}
 				} else {
 					global.IsLeader = false
+					global.IsAudit = true
 					global.LeaderDuration = 0
 				}
 			}
@@ -348,28 +352,61 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 		select {
 		default:
 
+			time.Sleep(time.Duration(5) * time.Second)
+
+			releaseQueue := accumulate.GenerateDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_RELEASE_QUEUE)
+
 			if global.IsLeader {
 
-				start := int64(0)
-				// start from latest block+1
-				// TO DO: get the latest blockheight from Accumulate
+				fmt.Println("[release] Checking pending chain of", releaseQueue)
 
-				fmt.Println("[burn] Parsing new EVM events for", bridge)
+				pendingEntries, err := a.QueryPendingChain(&accumulate.Params{URL: releaseQueue})
+				if err != nil {
+					fmt.Println("[release] Shutting down, unable to get pending chain:", err)
+					break
+				}
+
+				if len(pendingEntries.Items) > 0 {
+					fmt.Println("[release] Shutting down, found pending entries in", releaseQueue)
+					break
+				}
+
+				fmt.Println("[release] Getting block height from the latest entry of", releaseQueue)
+				latestReleaseEntry, err := a.QueryLatestDataEntry(&accumulate.Params{URL: releaseQueue})
+
+				// if Accumulate does not return blockheight, shut down to prevent double spending
+				if err != nil {
+					fmt.Println("[release] Unable to get block height:", err)
+					break
+				}
+
+				// parse latest burn entry to find out evm blockHeight
+				burnEntry, err := schema.ParseBurnEvent(latestReleaseEntry.Data)
+				if err != nil {
+					fmt.Println("[release]", err)
+					break
+				}
+
+				// looking for evm logs starting from latest height+1
+				start := burnEntry.BlockHeight + 1
+
+				fmt.Println("[release] Parsing new EVM events for", bridge, "starting from blockHeight", start)
 				logs, err := e.ParseBridgeLogs("Burn", bridge, start)
 				if err != nil {
 					log.Error(err)
+					break
 				}
 
 				// logs are sorted by timestamp asc
-				for _, log := range logs {
+				for _, l := range logs {
 
 					// create burnEntry
 					burnEntry := &schema.BurnEvent{}
-					burnEntry.EVMTxID = log.TxID.Hex()
-					burnEntry.BlockHeight = int64(log.BlockHeight)
-					burnEntry.TokenAddress = log.Token.String()
-					burnEntry.Destination = log.Destination
-					burnEntry.Amount = log.Amount.Int64()
+					burnEntry.EVMTxID = l.TxID.Hex()
+					burnEntry.BlockHeight = int64(l.BlockHeight)
+					burnEntry.TokenAddress = l.Token.String()
+					burnEntry.Destination = l.Destination
+					burnEntry.Amount = l.Amount.Int64()
 
 					// find token
 					token := utils.SearchEVMToken(burnEntry.TokenAddress)
@@ -379,22 +416,22 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 						continue
 					}
 
-					fmt.Println("Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
+					fmt.Println("[release] Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
 
 					// generate accumulate token tx
 					txhash, err := a.SendTokens(burnEntry.Destination, burnEntry.Amount, token.URL, int64(e.ChainId))
 					if err != nil {
-						fmt.Println("tx failed:", err)
+						fmt.Println("[release] tx failed:", err)
 						continue
 					}
 
-					fmt.Println("tx sent:", txhash)
+					fmt.Println("[release] tx sent:", txhash)
 
 					burnEntry.TxHash = txhash
 
 					burnEntryBytes, err := json.Marshal(burnEntry)
 					if err != nil {
-						fmt.Println("can not marshal burn entry:", err)
+						fmt.Println("[release] can not marshal burn entry:", err)
 						continue
 					}
 
@@ -402,58 +439,35 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 					content = append(content, []byte(accumulate.RELEASE_QUEUE_VERSION))
 					content = append(content, burnEntryBytes)
 
-					entryhash, err := a.WriteData(accumulate.GenerateDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_RELEASE_QUEUE), content)
+					entryhash, err := a.WriteData(releaseQueue, content)
 					if err != nil {
-						fmt.Println("data entry creation failed:", err)
+						fmt.Println("[release] data entry creation failed:", err)
 						continue
 					}
 
-					fmt.Println("data entry created:", entryhash)
+					fmt.Println("[release] data entry created:", entryhash)
+
+					log.Fatal("HERE")
 
 				}
 
-			} else {
+			} else if global.IsAudit {
 
-				dataAccountUrl := accumulate.GenerateDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_RELEASE_QUEUE) + "#pending/0:1000"
+				fmt.Println("[release] Checking pending chain of", releaseQueue)
+
+				dataAccountUrl := releaseQueue + "#pending"
 				dataAccount := &accumulate.Params{URL: dataAccountUrl}
 
 				dataSet, err := a.QueryTxHistory(dataAccount)
 				if err != nil {
-					fmt.Println("can not get pending data entries:", err)
+					fmt.Println("[release] can not get pending data entries:", err)
 				}
 
 				for _, entry := range dataSet.Items {
 
-					burnEntry := &schema.BurnEvent{}
-
-					// check version
-					if len(entry.Data.Entry.Data) < 2 {
-						fmt.Println("looking for at least 2 data fields in entry, found", len(entry.Data.Entry.Data))
-						continue
-					}
-
-					version, err := hex.DecodeString(entry.Data.Entry.Data[0])
+					burnEntry, err := schema.ParseBurnEvent(entry.Data)
 					if err != nil {
-						fmt.Println("can not decode entry data")
-						continue
-					}
-
-					if !bytes.Equal(version, []byte(accumulate.RELEASE_QUEUE_VERSION)) {
-						fmt.Println("entry version is not ", accumulate.RELEASE_QUEUE_VERSION)
-						continue
-					}
-
-					// convert entry data to bytes
-					burnEventBytes, err := hex.DecodeString(entry.Data.Entry.Data[1])
-					if err != nil {
-						fmt.Println("can not decode entry data")
-						continue
-					}
-
-					// try to unmarshal the entry
-					err = json.Unmarshal(burnEventBytes, burnEntry)
-					if err != nil {
-						fmt.Println("unable to unmarshal entry data")
+						fmt.Println("[release]", err)
 						continue
 					}
 
@@ -465,8 +479,8 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 						continue
 					}
 
-					fmt.Println("New pending tx:", burnEntry.TxHash, "- Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
-					fmt.Println("Checking corresponding EVM tx:", burnEntry.EVMTxID)
+					fmt.Println("[release] New pending tx:", burnEntry.TxHash, "- Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
+					fmt.Println("[release] Checking corresponding EVM tx:", burnEntry.EVMTxID)
 
 					evmTx, err := e.GetTx(burnEntry.EVMTxID)
 					if err != nil {
@@ -489,26 +503,24 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 					// sign accumulate tx
 					txhash, err := a.RemoteTransaction(hex.EncodeToString(remoteTxHash[:]))
 					if err != nil {
-						fmt.Println("tx failed:", err)
+						fmt.Println("[release] tx failed:", err)
 						continue
 					}
 
-					fmt.Println("tx sent:", txhash)
+					fmt.Println("[release] tx sent:", txhash)
 
 					// sign data entry
 					txhash, err = a.RemoteTransaction(entry.TxHash)
 					if err != nil {
-						fmt.Println("tx failed:", err)
+						fmt.Println("[release] tx failed:", err)
 						continue
 					}
 
-					fmt.Println("tx sent:", txhash)
+					fmt.Println("[release] tx sent:", txhash)
 
 				}
 
 			}
-
-			time.Sleep(time.Duration(30) * time.Second)
 
 		case <-die:
 			return
