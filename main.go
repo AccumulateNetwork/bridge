@@ -366,6 +366,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 					break
 				}
 
+				// if there are any pending entries, do not produce new tx
 				if len(pendingEntries.Items) > 0 {
 					fmt.Println("[release] Shutting down, found pending entries in", releaseQueue)
 					break
@@ -403,6 +404,12 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 				for _, l := range logs {
 
 					fmt.Println("[release] Height", l.BlockHeight, "txid", l.TxID.Hex())
+
+					// additional check in case evm node returns invalid response
+					if int64(l.BlockHeight) < start {
+						fmt.Println("[release] Invalid height, expected height >=", start)
+						continue
+					}
 
 					// process only single block height at once
 					// if blockheight changed = shutdown
@@ -472,6 +479,31 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 					break
 				}
 
+				// if no pending entries, shut down
+				if len(pending.Items) == 0 {
+					fmt.Println("[release] Shutting down, no pending entries found in", releaseQueue)
+					break
+				}
+
+				fmt.Println("[release] Getting block height from the latest entry of", releaseQueue)
+				latestReleaseEntry, err := a.QueryLatestDataEntry(&accumulate.Params{URL: releaseQueue})
+
+				// if Accumulate does not return blockheight, shut down to prevent double spending
+				if err != nil {
+					fmt.Println("[release] Unable to get block height:", err)
+					break
+				}
+
+				// parse latest burn entry to find out evm blockHeight
+				burnEntry, err := schema.ParseBurnEvent(latestReleaseEntry.Data)
+				if err != nil {
+					fmt.Println("[release]", err)
+					break
+				}
+
+				// looking for pending tx with blockheight starting from latest height+1
+				start := burnEntry.BlockHeight + 1
+
 				for _, entryhash := range pending.Items {
 
 					fmt.Println("[release] processing pending entry", entryhash)
@@ -479,13 +511,21 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 					entryURL := entryhash + "@" + releaseQueue
 					entry, err := a.QueryDataEntry(&accumulate.Params{URL: entryURL})
 					if err != nil {
-						fmt.Println("[release]", err)
+						fmt.Println("[release] Unable to get data entry", err)
 						continue
 					}
 
 					burnEntry, err := schema.ParseBurnEvent(entry.Data)
 					if err != nil {
-						fmt.Println("[release]", err)
+						fmt.Println("[release] Unable to parse burn event from data entry", err)
+						continue
+					}
+
+					fmt.Println("start", start, "event blockheight", burnEntry.BlockHeight)
+
+					// check block height to avoid old txs
+					if int64(burnEntry.BlockHeight) < start {
+						fmt.Println("[release] Invalid height, expected height >=", start)
 						continue
 					}
 
