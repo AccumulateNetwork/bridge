@@ -29,10 +29,14 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 	if err != nil {
 		return "", err
 	}
-	accUrl := protocol.AccountUrl(toUrl.Authority, toUrl.Path)
+
+	// generate accumulate internal/url data structure and fill it
+	accumulateUrl := protocol.AcmeUrl()
+	accumulateUrl.Authority = toUrl.Authority
+	accumulateUrl.Path = toUrl.Path
 
 	amountBigInt := *big.NewInt(amount)
-	payload.AddRecipient(accUrl, &amountBigInt)
+	payload.AddRecipient(accumulateUrl, &amountBigInt)
 
 	env, err := c.buildEnvelope(fromTokenAccount, payload)
 	if err != nil {
