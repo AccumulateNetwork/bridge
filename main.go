@@ -352,7 +352,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 		select {
 		default:
 
-			time.Sleep(time.Duration(60) * time.Second)
+			time.Sleep(time.Duration(30) * time.Second)
 
 			releaseQueue := accumulate.GenerateDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_RELEASE_QUEUE)
 
@@ -393,12 +393,23 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 				fmt.Println("[release] Parsing new EVM events for", bridge, "starting from blockHeight", start)
 				logs, err := e.ParseBridgeLogs("Burn", bridge, start)
 				if err != nil {
-					log.Error(err)
+					fmt.Println("[release]", err)
 					break
 				}
 
+				knownHeight := 0
+
 				// logs are sorted by timestamp asc
 				for _, l := range logs {
+
+					fmt.Println("[release] Height", l.BlockHeight, "txid", l.TxID.Hex())
+
+					// process only single block height at once
+					// if blockheight changed = shutdown
+					if knownHeight > 0 && l.BlockHeight != uint64(knownHeight) {
+						fmt.Println("[release] Height changed, will process event in the next batch, shutting down")
+						break
+					}
 
 					// create burnEntry
 					burnEntry := &schema.BurnEvent{}
@@ -446,6 +457,8 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 					}
 
 					fmt.Println("[release] data entry created:", entryhash)
+
+					knownHeight = int(l.BlockHeight)
 
 				}
 
