@@ -495,14 +495,14 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 				}
 
 				// parse latest burn entry to find out evm blockHeight
-				burnEntry, err := schema.ParseBurnEvent(latestReleaseEntry.Data)
+				latestCompletedBurn, err := schema.ParseBurnEvent(latestReleaseEntry.Data)
 				if err != nil {
 					fmt.Println("[release]", err)
 					break
 				}
 
 				// looking for pending tx with blockheight starting from latest height+1
-				start := burnEntry.BlockHeight + 1
+				start := latestCompletedBurn.BlockHeight + 1
 
 				for _, entryhash := range pending.Items {
 
