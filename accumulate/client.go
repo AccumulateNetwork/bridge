@@ -30,6 +30,16 @@ type TokenAccount struct {
 	Balance  string `json:"balance" validate:"required"`
 }
 
+type TokenTx struct {
+	From string       `json:"from" validate:"required"`
+	To   []*TokenTxTo `json:"to" validate:"required"`
+}
+
+type TokenTxTo struct {
+	URL    string `json:"url" validate:"required"`
+	Amount string `json:"amount" validate:"required"`
+}
+
 type DataEntry struct {
 	EntryHash string `json:"entryHash" validate:"required"`
 	Entry     struct {
@@ -75,7 +85,11 @@ type QueryPendingChainResponse struct {
 	Items []string `json:"items"`
 }
 
-type QueryTxHistory struct {
+type QueryTokenTxResponse struct {
+	Data *TokenTx `json:"data"`
+}
+
+type QueryTxHistoryResponse struct {
 	Items []*TxHistoryItem `json:"items"`
 }
 
@@ -169,10 +183,39 @@ func (c *AccumulateClient) QueryTokenAccount(account *Params) (*QueryTokenAccoun
 
 }
 
-// QueryTxHistory gets tx history of account
-func (c *AccumulateClient) QueryTxHistory(account *Params) (*QueryTxHistory, error) {
+// QueryTokenTx gets token tx by url
+func (c *AccumulateClient) QueryTokenTx(tx *Params) (*QueryTokenTxResponse, error) {
 
-	historyResp := &QueryTxHistory{}
+	txResp := &QueryTokenTxResponse{}
+
+	resp, err := c.Client.Call(context.Background(), "query", &tx)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	err = resp.GetObject(txResp)
+	if err != nil {
+		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
+	}
+
+	err = c.Validate.Struct(txResp)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return txResp, nil
+
+}
+
+// QueryTxHistory gets tx history of account
+func (c *AccumulateClient) QueryTxHistory(account *Params) (*QueryTxHistoryResponse, error) {
+
+	historyResp := &QueryTxHistoryResponse{}
 
 	resp, err := c.Client.Call(context.Background(), "query", &account)
 	if err != nil {
