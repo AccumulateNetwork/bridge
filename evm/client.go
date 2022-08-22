@@ -2,6 +2,7 @@ package evm
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/AccumulateNetwork/bridge/binding"
@@ -20,7 +21,7 @@ type Tx struct {
 	TxHash  string
 	ChainId int64
 	To      string
-	Data    []byte
+	Data    string
 }
 
 // GetERC20 gets ERC20 Token info
@@ -85,7 +86,7 @@ func (e *EVMClient) GetTx(hash string) (*Tx, error) {
 
 	// fill additional data to check it in main module
 	tx.To = evmTx.To().Hex()
-	tx.Data = evmTx.Data()
+	tx.Data = hex.EncodeToString(evmTx.Data())
 
 	return tx, nil
 

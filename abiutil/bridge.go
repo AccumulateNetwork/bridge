@@ -1,10 +1,12 @@
 package abiutil
 
 import (
-	"fmt"
+	"encoding/hex"
+	"encoding/json"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/labstack/gommon/log"
 )
 
 type BurnData struct {
@@ -36,30 +38,51 @@ func GenerateMintTxData(tokenAddress string, recipientAddress string, amount *bi
 
 }
 
-// UnpackBurnTxInputData unpacks bridge tx input data
-func UnpackBurnTxInputData(data []byte) (*BurnData, error) {
+// UnpackBurnTxInputData unpacks bridge tx input data in 0x format
+func UnpackBurnTxInputData(data string) (*BurnData, error) {
 
+	// load contract ABI
 	abi, err := NewABI([]byte(BRIDGE_ABI))
 	if err != nil {
 		return nil, err
 	}
 
-	method, ok := abi.Methods["burn"]
-	if !ok {
-		return nil, fmt.Errorf("error finding method burn")
-	}
-
-	var v map[string]interface{}
-
-	// unpack method inputs
-	err = method.Inputs.UnpackIntoMap(v, data[4:])
+	// decode txInput method signature
+	decodedSig, err := hex.DecodeString(data[2:10])
 	if err != nil {
 		return nil, err
 	}
 
-	//fmt.Println(v["amount"].(*big.Int))
+	// recover Method from signature and ABI
+	method, err := abi.MethodById(decodedSig)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	// decode txInput Payload
+	decodedData, err := hex.DecodeString(data[10:])
+	if err != nil {
+		return nil, err
+	}
+
+	m := make(map[string]interface{})
+
+	err = method.Inputs.UnpackIntoMap(m, decodedData)
+	if err != nil {
+		return nil, err
+	}
+
+	jsonInputs, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
 
 	burnData := &BurnData{}
+	err = json.Unmarshal(jsonInputs, burnData)
+	if err != nil {
+		return nil, err
+	}
 
 	return burnData, nil
 
