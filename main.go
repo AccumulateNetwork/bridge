@@ -537,26 +537,51 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 						continue
 					}
 
-					fmt.Println("[release] New pending tx:", burnEntry.TxHash, "- Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
+					fmt.Println("[release] Found new pending tx:", burnEntry.TxHash, "- Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
 					fmt.Println("[release] Checking corresponding EVM tx:", burnEntry.EVMTxID)
 
+					// parse evm tx
 					evmTx, err := e.GetTx(burnEntry.EVMTxID)
 					if err != nil {
 						fmt.Println(err)
 						continue
 					}
 
+					burnData, err := abiutil.UnpackBurnTxInputData(evmTx.Data)
+					if err != nil {
+						fmt.Println("[release] unable to read burn tx:", err)
+						continue
+					}
+
+					// validate burn entry against evm tx
+					err = utils.ValidateBurnEntry(burnEntry, burnData)
+					if err != nil {
+						fmt.Println("[release] burn entry validation failed:", err)
+						continue
+					}
+
 					// parse accumulate txid
-					tx, err := acmeurl.ParseTxID(burnEntry.TxHash)
+					txid, err := acmeurl.ParseTxID(burnEntry.TxHash)
 					if err != nil {
 						fmt.Println(err)
 						continue
 					}
 
-					remoteTxHash := tx.Hash()
+					remoteTxHash := txid.Hash()
 
-					// TO DO: validate input data
-					abiutil.UnpackBurnTxInputData(evmTx.Data)
+					// parse accumulate tx
+					tx, err := a.QueryTokenTx(&accumulate.Params{URL: burnEntry.TxHash})
+					if err != nil {
+						fmt.Println(err)
+						continue
+					}
+
+					// validate accumulate tx against evm tx
+					err = utils.ValidateReleaseTx(tx.Data, burnData)
+					if err != nil {
+						fmt.Println("[release] accumulate tx validation failed:", err)
+						continue
+					}
 
 					// sign accumulate tx
 					txhash, err := a.RemoteTransaction(hex.EncodeToString(remoteTxHash[:]))
