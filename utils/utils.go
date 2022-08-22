@@ -58,7 +58,7 @@ func ValidateBurnEntry(entry *schema.BurnEvent, tx *abiutil.BurnData) error {
 	}
 
 	log.Debug("entry destination=", entryDestination, ", tx destination=", txDestination)
-	if entryDestination != txDestination {
+	if entryDestination.Authority != txDestination.Authority || entryDestination.Path != txDestination.Path {
 		return fmt.Errorf("entry destination=%s, tx destination=%s", entry.Destination, tx.Destination)
 	}
 
@@ -101,7 +101,7 @@ func ValidateReleaseTx(releaseTx *accumulate.TokenTx, tx *abiutil.BurnData) erro
 	}
 
 	log.Debug("release tx destination=", releaseTx.To[0].URL, ", tx destination=", tx.Destination)
-	if releaseTxTo == txDestination {
+	if releaseTxTo.Authority != txDestination.Authority || releaseTxTo.Path != txDestination.Path {
 		return fmt.Errorf("entry destination=%s, tx destination=%s", releaseTx.To[0].URL, tx.Destination)
 	}
 
