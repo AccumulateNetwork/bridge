@@ -38,7 +38,7 @@ func GenerateMintTxData(tokenAddress string, recipientAddress string, amount *bi
 
 }
 
-// UnpackBurnTxInputData unpacks bridge tx input data in 0x format
+// UnpackBurnTxInputData unpacks bridge tx input data in hex format (without 0x)
 func UnpackBurnTxInputData(data string) (*BurnData, error) {
 
 	// load contract ABI
@@ -48,7 +48,7 @@ func UnpackBurnTxInputData(data string) (*BurnData, error) {
 	}
 
 	// decode txInput method signature
-	decodedSig, err := hex.DecodeString(data[2:10])
+	decodedSig, err := hex.DecodeString(data[0:8])
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func UnpackBurnTxInputData(data string) (*BurnData, error) {
 	}
 
 	// decode txInput Payload
-	decodedData, err := hex.DecodeString(data[10:])
+	decodedData, err := hex.DecodeString(data[8:])
 	if err != nil {
 		return nil, err
 	}
