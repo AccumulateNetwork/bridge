@@ -47,7 +47,7 @@ type Token struct {
 	EVMMintTxCost int64  `json:"evmMintTxCost"`
 }
 
-// BurnEvent is an event of token burns
+// BurnEvent is an event of token burns on the EVM side
 type BurnEvent struct {
 	EVMTxID      string `json:"evmTxID"`
 	BlockHeight  int64  `json:"blockHeight"`
@@ -56,6 +56,18 @@ type BurnEvent struct {
 	Destination  string `json:"destination"`
 	TokenURL     string `json:"-"`
 	TxHash       string `json:"txHash"`
+}
+
+// DepositEvent is an event of token deposit into bridge token account
+type DepositEvent struct {
+	TxHash       string `json:"txHash"`
+	Source       string `json:"source"`
+	TokenURL     string `json:"tokenURL"`
+	Amount       int64  `json:"amount"`
+	SeqNumber    int64  `json:"seqNumber"`
+	Destination  string `json:"destination"`
+	TokenAddress string `json:"-"`
+	SafeTxHash   string `json:"safeTxHash"`
 }
 
 // ParseBurnEvent parses accumulate data entry into burn event and validates it

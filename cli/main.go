@@ -635,6 +635,82 @@ func main() {
 
 				},
 			},
+			{
+				Name:  "set-mint-height",
+				Usage: "Generates and submits accumulate data entry for mint queue",
+				Action: func(c *cli.Context) error {
+
+					if c.NArg() != 2 {
+						printSetMintHeightHelp()
+						return nil
+					}
+
+					chainIdString := c.Args().Get(0)
+					seqNumberString := c.Args().Get(1)
+
+					var conf *config.Config
+					var err error
+					configFile := c.String("config")
+
+					if configFile == "" {
+						usr, err := user.Current()
+						if err != nil {
+							return err
+						}
+						configFile = usr.HomeDir + "/.accumulatebridge/config.yaml"
+					}
+
+					fmt.Printf("using config: %s\n", configFile)
+
+					if conf, err = config.NewConfig(configFile); err != nil {
+						fmt.Print("can not load config: ")
+						return err
+					}
+
+					a, err := accumulate.NewAccumulateClient(conf)
+					if err != nil {
+						fmt.Print("can not init accumulate client: ")
+						return err
+					}
+
+					chainId, err := strconv.Atoi(chainIdString)
+					if err != nil {
+						fmt.Print("chainId must be a number")
+						return err
+					}
+
+					seqNumber, err := strconv.Atoi(seqNumberString)
+					if err != nil {
+						fmt.Print("seqNumber must be a number")
+						return err
+					}
+
+					entry := &schema.DepositEvent{}
+					entry.SeqNumber = int64(seqNumber)
+
+					entryBytes, err := json.Marshal(entry)
+					if err != nil {
+						fmt.Print(err)
+					}
+
+					var content [][]byte
+					content = append(content, []byte(accumulate.MINT_QUEUE_VERSION))
+					content = append(content, entryBytes)
+
+					dataAccount := accumulate.GenerateDataAccount(a.ADI, int64(chainId), accumulate.ACC_MINT_QUEUE)
+
+					txhash, err := a.WriteData(dataAccount, content)
+					if err != nil {
+						fmt.Print("tx failed: ")
+						return err
+					}
+
+					fmt.Printf("tx sent: %s", txhash)
+
+					return nil
+
+				},
+			},
 		},
 	}
 
@@ -674,6 +750,10 @@ func printUpdateFeesHelp() {
 
 func printSetReleaseHeightHelp() {
 	fmt.Println("set-release-height [evm chain id] [evm blockheight]")
+}
+
+func printSetMintHeightHelp() {
+	fmt.Println("set-release-height [evm chain id] [tx history seq number]")
 }
 
 func printSetLeaderHelp() {
