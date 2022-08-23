@@ -145,8 +145,7 @@ func start(configFile string) {
 
 		// init interval go routines
 		die := make(chan bool)
-		leaderDataAccount := filepath.Join(conf.ACME.BridgeADI, accumulate.ACC_LEADER)
-		go getLeader(a, leaderDataAccount, die)
+		go getLeader(a, die)
 		// go debugLeader(die)
 		go processBurnEvents(a, e, conf.EVM.BridgeAddress, die)
 
@@ -159,7 +158,9 @@ func start(configFile string) {
 }
 
 // getLeader parses current leader's public key hash from Accumulate data account and compares it with Accumulate key in the config to find out if this node is a leader or not
-func getLeader(a *accumulate.AccumulateClient, leaderDataAccount string, die chan bool) {
+func getLeader(a *accumulate.AccumulateClient, die chan bool) {
+
+	leaderDataAccount := filepath.Join(a.ADI, accumulate.ACC_LEADER)
 
 	for {
 
