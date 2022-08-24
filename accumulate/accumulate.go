@@ -22,7 +22,7 @@ const (
 	ACC_BRIDGE_FEES        = "fees"    // data account: bridge fees
 	ACC_MINT_QUEUE         = "mint"    // data account: mint queue, {chainid}:mint
 	ACC_RELEASE_QUEUE      = "release" // data account: release queue, {chainid}:release
-	TOKEN_REGISTRY_VERSION = "v1"      // validate token registry data entries
+	ACC_BRIDGE_STATUS      = "status"    // data account: status (1 = on, 0 = off)
 	MINT_QUEUE_VERSION     = "v1"      // validate burn events data entries
 	RELEASE_QUEUE_VERSION  = "v1"      // validate deposit list data entries
 	SIGNATURE_TYPE         = "ed25519"

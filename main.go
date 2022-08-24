@@ -145,6 +145,7 @@ func start(configFile string) {
 
 		// init interval go routines
 		die := make(chan bool)
+		go getStatus(a, die)
 		go getLeader(a, die)
 		// go debugLeader(die)
 		go processBurnEvents(a, e, conf.EVM.BridgeAddress, die)
@@ -169,7 +170,7 @@ func getLeader(a *accumulate.AccumulateClient, die chan bool) {
 
 			leaderData, err := a.QueryLatestDataEntry(&accumulate.Params{URL: leaderDataAccount})
 			if err != nil {
-				fmt.Println("[leader]", err)
+				fmt.Println("[leader] Unable to read bridge leader:", err)
 				global.IsLeader = false
 				global.IsAudit = false
 				global.LeaderDuration = 0
@@ -197,6 +198,41 @@ func getLeader(a *accumulate.AccumulateClient, die chan bool) {
 					global.IsLeader = false
 					global.IsAudit = true
 					global.LeaderDuration = 0
+				}
+			}
+
+			// check leader every minute
+			time.Sleep(time.Duration(1) * time.Minute)
+
+		case <-die:
+			return
+		}
+
+	}
+
+}
+
+// getStatus checks if the bridge is online
+func getStatus(a *accumulate.AccumulateClient, die chan bool) {
+
+	statusDataAccount := filepath.Join(a.ADI, accumulate.ACC_BRIDGE_STATUS)
+
+	for {
+
+		select {
+		default:
+
+			online, err := a.QueryLatestDataEntry(&accumulate.Params{URL: statusDataAccount})
+			if err != nil {
+				fmt.Println("[status] Unable to read bridge status:", err)
+				global.IsOnline = false
+			} else {
+				if len(online.Data.Entry.Data[0]) > 0 {
+					fmt.Println("[status] Bridge is online")
+					global.IsOnline = true
+				} else {
+					fmt.Println("[status] Bridge is paused")
+					global.IsOnline = false
 				}
 			}
 

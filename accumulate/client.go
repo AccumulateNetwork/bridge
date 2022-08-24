@@ -44,7 +44,7 @@ type DataEntry struct {
 	EntryHash string `json:"entryHash" validate:"required"`
 	Entry     struct {
 		Type string   `json:"type" validate:"required"`
-		Data []string `json:"data" validate:"gt=0,dive,required,gt=0"`
+		Data []string `json:"data" validate:"gt=0"`
 	}
 }
 

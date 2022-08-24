@@ -231,7 +231,7 @@ func main() {
 			},
 			{
 				Name:  "release",
-				Usage: "Generates, signs and submits tx to release native tokens",
+				Usage: "Generates and submits tx to release native tokens",
 				Action: func(c *cli.Context) error {
 
 					if c.NArg() != 3 {
@@ -698,6 +698,101 @@ func main() {
 					content = append(content, entryBytes)
 
 					dataAccount := accumulate.GenerateDataAccount(a.ADI, int64(chainId), accumulate.ACC_MINT_QUEUE)
+
+					txhash, err := a.WriteData(dataAccount, content)
+					if err != nil {
+						fmt.Print("tx failed: ")
+						return err
+					}
+
+					fmt.Printf("tx sent: %s", txhash)
+
+					return nil
+
+				},
+			},
+			{
+				Name:  "pause",
+				Usage: "Generates and submits accumulate data entry to pause the bridge",
+				Action: func(c *cli.Context) error {
+
+					var conf *config.Config
+					var err error
+					configFile := c.String("config")
+
+					if configFile == "" {
+						usr, err := user.Current()
+						if err != nil {
+							return err
+						}
+						configFile = usr.HomeDir + "/.accumulatebridge/config.yaml"
+					}
+
+					fmt.Printf("using config: %s\n", configFile)
+
+					if conf, err = config.NewConfig(configFile); err != nil {
+						fmt.Print("can not load config: ")
+						return err
+					}
+
+					a, err := accumulate.NewAccumulateClient(conf)
+					if err != nil {
+						fmt.Print("can not init accumulate client: ")
+						return err
+					}
+
+					var content [][]byte
+					var empty []byte
+					content = append(content, empty)
+
+					dataAccount := filepath.Join(a.ADI, accumulate.ACC_BRIDGE_STATUS)
+
+					txhash, err := a.WriteData(dataAccount, content)
+					if err != nil {
+						fmt.Print("tx failed: ")
+						return err
+					}
+
+					fmt.Printf("tx sent: %s", txhash)
+
+					return nil
+
+				},
+			},
+			{
+				Name:  "start",
+				Usage: "Generates and submits accumulate data entry to start the bridge",
+				Action: func(c *cli.Context) error {
+
+					var conf *config.Config
+					var err error
+					configFile := c.String("config")
+
+					if configFile == "" {
+						usr, err := user.Current()
+						if err != nil {
+							return err
+						}
+						configFile = usr.HomeDir + "/.accumulatebridge/config.yaml"
+					}
+
+					fmt.Printf("using config: %s\n", configFile)
+
+					if conf, err = config.NewConfig(configFile); err != nil {
+						fmt.Print("can not load config: ")
+						return err
+					}
+
+					a, err := accumulate.NewAccumulateClient(conf)
+					if err != nil {
+						fmt.Print("can not init accumulate client: ")
+						return err
+					}
+
+					var content [][]byte
+					content = append(content, []byte("1"))
+
+					dataAccount := filepath.Join(a.ADI, accumulate.ACC_BRIDGE_STATUS)
 
 					txhash, err := a.WriteData(dataAccount, content)
 					if err != nil {
