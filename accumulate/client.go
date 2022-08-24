@@ -31,8 +31,13 @@ type TokenAccount struct {
 }
 
 type TokenTx struct {
-	From string       `json:"from" validate:"required"`
-	To   []*TokenTxTo `json:"to" validate:"required"`
+	From     string       `json:"from" validate:"required"`
+	To       []*TokenTxTo `json:"to" validate:"required"`
+	Cause    string       `json:"cause"`
+	Source   string       `json:"source"`
+	Token    string       `json:"token"`
+	Amount   string       `json:"amount"`
+	IsRefund bool         `json:"isRefund"`
 }
 
 type TokenTxTo struct {
@@ -51,6 +56,7 @@ type DataEntry struct {
 type Params struct {
 	URL      string             `json:"url"`
 	Count    int64              `json:"count"`
+	Start    int64              `json:"start"`
 	Expand   bool               `json:"expand"`
 	Envelope *protocol.Envelope `json:"envelope"`
 }
@@ -86,16 +92,18 @@ type QueryPendingChainResponse struct {
 }
 
 type QueryTokenTxResponse struct {
-	Data *TokenTx `json:"data"`
+	Type        string   `json:"type" validate:"required"`
+	TxHash      string   `json:"transactionHash"`
+	Data        *TokenTx `json:"data"`
+	Transaction struct {
+		Header struct {
+			Memo string `json:"memo"`
+		}
+	}
 }
 
 type QueryTxHistoryResponse struct {
-	Items []*TxHistoryItem `json:"items"`
-}
-
-type TxHistoryItem struct {
-	TxHash string     `json:"transactionHash"`
-	Data   *DataEntry `json:"data"`
+	Items []*QueryTokenTxResponse `json:"items"`
 }
 
 // QueryADI gets Token info
@@ -217,7 +225,7 @@ func (c *AccumulateClient) QueryTxHistory(account *Params) (*QueryTxHistoryRespo
 
 	historyResp := &QueryTxHistoryResponse{}
 
-	resp, err := c.Client.Call(context.Background(), "query", &account)
+	resp, err := c.Client.Call(context.Background(), "query-tx-history", &account)
 	if err != nil {
 		return nil, err
 	}
