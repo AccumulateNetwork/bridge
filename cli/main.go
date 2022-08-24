@@ -621,7 +621,7 @@ func main() {
 					content = append(content, []byte(accumulate.RELEASE_QUEUE_VERSION))
 					content = append(content, entryBytes)
 
-					dataAccount := accumulate.GenerateDataAccount(a.ADI, int64(chainId), accumulate.ACC_RELEASE_QUEUE)
+					dataAccount := accumulate.GenerateReleaseDataAccount(a.ADI, int64(chainId), accumulate.ACC_RELEASE_QUEUE)
 
 					txhash, err := a.WriteData(dataAccount, content)
 					if err != nil {
@@ -640,13 +640,14 @@ func main() {
 				Usage: "Generates and submits accumulate data entry for mint queue",
 				Action: func(c *cli.Context) error {
 
-					if c.NArg() != 2 {
+					if c.NArg() != 3 {
 						printSetMintHeightHelp()
 						return nil
 					}
 
 					chainIdString := c.Args().Get(0)
-					seqNumberString := c.Args().Get(1)
+					symbol := c.Args().Get(1)
+					seqNumberString := c.Args().Get(2)
 
 					var conf *config.Config
 					var err error
@@ -697,7 +698,7 @@ func main() {
 					content = append(content, []byte(accumulate.MINT_QUEUE_VERSION))
 					content = append(content, entryBytes)
 
-					dataAccount := accumulate.GenerateDataAccount(a.ADI, int64(chainId), accumulate.ACC_MINT_QUEUE)
+					dataAccount := accumulate.GenerateMintDataAccount(a.ADI, int64(chainId), accumulate.ACC_MINT_QUEUE, symbol)
 
 					txhash, err := a.WriteData(dataAccount, content)
 					if err != nil {
@@ -848,7 +849,7 @@ func printSetReleaseHeightHelp() {
 }
 
 func printSetMintHeightHelp() {
-	fmt.Println("set-release-height [evm chain id] [tx history seq number]")
+	fmt.Println("set-mint-height [evm chain id] [token symbol] [tx history seq number]")
 }
 
 func printSetLeaderHelp() {

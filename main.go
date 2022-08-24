@@ -25,7 +25,9 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
-const LEADER_MIN_DURATION = 2
+const LEADER_MIN_DURATION = 1
+
+var LatestCheckedDeposits map[string]int64
 
 func main() {
 
@@ -40,6 +42,8 @@ func main() {
 
 	flag.StringVar(&configFile, "c", configFile, "config.yaml path")
 	flag.Parse()
+
+	LatestCheckedDeposits = make(map[string]int64)
 
 	start(configFile)
 
@@ -148,7 +152,9 @@ func start(configFile string) {
 		go getStatus(a, die)
 		go getLeader(a, die)
 		// go debugLeader(die)
-		go processBurnEvents(a, e, conf.EVM.BridgeAddress, die)
+
+		// go processBurnEvents(a, e, conf.EVM.BridgeAddress, die)
+		go processNewDeposits(a, e, conf.EVM.BridgeAddress, die)
 
 		// init Accumulate Bridge API
 		fmt.Println("Starting Accumulate Bridge API at port", conf.App.APIPort)
@@ -391,255 +397,413 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 
 			time.Sleep(time.Duration(30) * time.Second)
 
-			releaseQueue := accumulate.GenerateDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_RELEASE_QUEUE)
+			releaseQueue := accumulate.GenerateReleaseDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_RELEASE_QUEUE)
 
-			if global.IsLeader {
+			if global.IsOnline {
 
-				fmt.Println("[release] Checking pending chain of", releaseQueue)
+				if global.IsLeader {
 
-				pendingEntries, err := a.QueryPendingChain(&accumulate.Params{URL: releaseQueue})
-				if err != nil {
-					fmt.Println("[release] Shutting down, unable to get pending chain:", err)
-					break
-				}
+					fmt.Println("[release] Checking pending chain of", releaseQueue)
 
-				// if there are any pending entries, do not produce new tx
-				if len(pendingEntries.Items) > 0 {
-					fmt.Println("[release] Shutting down, found pending entries in", releaseQueue)
-					break
-				}
-
-				fmt.Println("[release] Getting block height from the latest entry of", releaseQueue)
-				latestReleaseEntry, err := a.QueryLatestDataEntry(&accumulate.Params{URL: releaseQueue})
-
-				// if Accumulate does not return blockheight, shut down to prevent double spending
-				if err != nil {
-					fmt.Println("[release] Unable to get block height:", err)
-					break
-				}
-
-				// parse latest burn entry to find out evm blockHeight
-				burnEntry, err := schema.ParseBurnEvent(latestReleaseEntry.Data)
-				if err != nil {
-					fmt.Println("[release]", err)
-					break
-				}
-
-				// looking for evm logs starting from latest height+1
-				start := burnEntry.BlockHeight + 1
-
-				fmt.Println("[release] Parsing new EVM events for", bridge, "starting from blockHeight", start)
-				logs, err := e.ParseBridgeLogs("Burn", bridge, start)
-				if err != nil {
-					fmt.Println("[release]", err)
-					break
-				}
-
-				knownHeight := 0
-
-				// logs are sorted by timestamp asc
-				for _, l := range logs {
-
-					fmt.Println("[release] Height", l.BlockHeight, "txid", l.TxID.Hex())
-
-					// additional check in case evm node returns invalid response
-					if int64(l.BlockHeight) < start {
-						fmt.Println("[release] Invalid height, expected height >=", start)
-						continue
-					}
-
-					// process only single block height at once
-					// if blockheight changed = shutdown
-					if knownHeight > 0 && l.BlockHeight != uint64(knownHeight) {
-						fmt.Println("[release] Height changed, will process event in the next batch, shutting down")
+					pendingEntries, err := a.QueryPendingChain(&accumulate.Params{URL: releaseQueue})
+					if err != nil {
+						fmt.Println("[release] Stopping the process, unable to get pending chain:", err)
 						break
 					}
 
-					// create burnEntry
-					burnEntry := &schema.BurnEvent{}
-					burnEntry.EVMTxID = l.TxID.Hex()
-					burnEntry.BlockHeight = int64(l.BlockHeight)
-					burnEntry.TokenAddress = l.Token.String()
-					burnEntry.Destination = l.Destination
-					burnEntry.Amount = l.Amount.Int64()
-
-					// find token
-					token := utils.SearchEVMToken(burnEntry.TokenAddress)
-
-					// skip if no token found
-					if token == nil {
-						continue
+					// if there are any pending entries, do not produce new tx
+					if len(pendingEntries.Items) > 0 {
+						fmt.Println("[release] Stopping the process, found pending entries in", releaseQueue)
+						break
 					}
 
-					fmt.Println("[release] Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
+					fmt.Println("[release] Getting block height from the latest entry of", releaseQueue)
+					latestReleaseEntry, err := a.QueryLatestDataEntry(&accumulate.Params{URL: releaseQueue})
 
-					// generate accumulate token tx
-					txhash, err := a.SendTokens(burnEntry.Destination, burnEntry.Amount, token.URL, int64(e.ChainId))
+					// if Accumulate does not return blockheight, shut down to prevent double spending
 					if err != nil {
-						fmt.Println("[release] tx failed:", err)
-						continue
+						fmt.Println("[release] Unable to get block height:", err)
+						break
 					}
 
-					fmt.Println("[release] tx sent:", txhash)
-
-					burnEntry.TxHash = txhash
-
-					burnEntryBytes, err := json.Marshal(burnEntry)
+					// parse latest burn entry to find out evm blockHeight
+					burnEntry, err := schema.ParseBurnEvent(latestReleaseEntry.Data)
 					if err != nil {
-						fmt.Println("[release] can not marshal burn entry:", err)
-						continue
+						fmt.Println("[release]", err)
+						break
 					}
 
-					var content [][]byte
-					content = append(content, []byte(accumulate.RELEASE_QUEUE_VERSION))
-					content = append(content, burnEntryBytes)
+					// looking for evm logs starting from latest height+1
+					start := burnEntry.BlockHeight + 1
 
-					entryhash, err := a.WriteData(releaseQueue, content)
+					fmt.Println("[release] Parsing new EVM events for", bridge, "starting from blockHeight", start)
+					logs, err := e.ParseBridgeLogs("Burn", bridge, start)
 					if err != nil {
-						fmt.Println("[release] data entry creation failed:", err)
-						continue
+						fmt.Println("[release]", err)
+						break
 					}
 
-					fmt.Println("[release] data entry created:", entryhash)
+					knownHeight := 0
 
-					knownHeight = int(l.BlockHeight)
+					// logs are sorted by timestamp asc
+					for _, l := range logs {
 
+						fmt.Println("[release] Height", l.BlockHeight, "txid", l.TxID.Hex())
+
+						// additional check in case evm node returns invalid response
+						if int64(l.BlockHeight) < start {
+							fmt.Println("[release] Invalid height, expected height >=", start)
+							continue
+						}
+
+						// process only single block height at once
+						// if blockheight changed = shutdown
+						if knownHeight > 0 && l.BlockHeight != uint64(knownHeight) {
+							fmt.Println("[release] Height changed, will process event in the next batch, stopping the process")
+							break
+						}
+
+						// create burnEntry
+						burnEntry := &schema.BurnEvent{}
+						burnEntry.EVMTxID = l.TxID.Hex()
+						burnEntry.BlockHeight = int64(l.BlockHeight)
+						burnEntry.TokenAddress = l.Token.String()
+						burnEntry.Destination = l.Destination
+						burnEntry.Amount = l.Amount.Int64()
+
+						// find token
+						token := utils.SearchEVMToken(burnEntry.TokenAddress)
+
+						// skip if no token found
+						if token == nil {
+							continue
+						}
+
+						fmt.Println("[release] Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
+
+						// generate accumulate token tx
+						txhash, err := a.SendTokens(burnEntry.Destination, burnEntry.Amount, token.URL, int64(e.ChainId))
+						if err != nil {
+							fmt.Println("[release] tx failed:", err)
+							continue
+						}
+
+						fmt.Println("[release] tx sent:", txhash)
+
+						burnEntry.TxHash = txhash
+
+						burnEntryBytes, err := json.Marshal(burnEntry)
+						if err != nil {
+							fmt.Println("[release] can not marshal burn entry:", err)
+							continue
+						}
+
+						var content [][]byte
+						content = append(content, []byte(accumulate.RELEASE_QUEUE_VERSION))
+						content = append(content, burnEntryBytes)
+
+						entryhash, err := a.WriteData(releaseQueue, content)
+						if err != nil {
+							fmt.Println("[release] data entry creation failed:", err)
+							continue
+						}
+
+						fmt.Println("[release] data entry created:", entryhash)
+
+						knownHeight = int(l.BlockHeight)
+
+					}
+
+				} else if global.IsAudit {
+
+					fmt.Println("[release] Checking pending chain of", releaseQueue)
+
+					pending, err := a.QueryPendingChain(&accumulate.Params{URL: releaseQueue})
+					if err != nil {
+						fmt.Println("[release] can not get pending data entries:", err)
+						break
+					}
+
+					// if no pending entries, shut down
+					if len(pending.Items) == 0 {
+						fmt.Println("[release] Stopping the process, no pending entries found in", releaseQueue)
+						break
+					}
+
+					fmt.Println("[release] Getting block height from the latest entry of", releaseQueue)
+					latestReleaseEntry, err := a.QueryLatestDataEntry(&accumulate.Params{URL: releaseQueue})
+
+					// if Accumulate does not return blockheight, shut down to prevent double spending
+					if err != nil {
+						fmt.Println("[release] Unable to get block height:", err)
+						break
+					}
+
+					// parse latest burn entry to find out evm blockHeight
+					latestCompletedBurn, err := schema.ParseBurnEvent(latestReleaseEntry.Data)
+					if err != nil {
+						fmt.Println("[release]", err)
+						break
+					}
+
+					// looking for pending tx with blockheight starting from latest height+1
+					start := latestCompletedBurn.BlockHeight + 1
+
+					for _, entryhash := range pending.Items {
+
+						fmt.Println("[release] processing pending entry", entryhash)
+
+						entryURL := entryhash + "@" + releaseQueue
+						entry, err := a.QueryDataEntry(&accumulate.Params{URL: entryURL})
+						if err != nil {
+							fmt.Println("[release] Unable to get data entry", err)
+							continue
+						}
+
+						burnEntry, err := schema.ParseBurnEvent(entry.Data)
+						if err != nil {
+							fmt.Println("[release] Unable to parse burn event from data entry", err)
+							continue
+						}
+
+						fmt.Println("start", start, "event blockheight", burnEntry.BlockHeight)
+
+						// check block height to avoid old txs
+						if int64(burnEntry.BlockHeight) < start {
+							fmt.Println("[release] Invalid height, expected height >=", start)
+							continue
+						}
+
+						// find token
+						token := utils.SearchEVMToken(burnEntry.TokenAddress)
+
+						// skip if no token found
+						if token == nil {
+							continue
+						}
+
+						fmt.Println("[release] Found new pending tx:", burnEntry.TxHash, "- Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
+						fmt.Println("[release] Checking corresponding EVM tx:", burnEntry.EVMTxID)
+
+						// parse evm tx
+						evmTx, err := e.GetTx(burnEntry.EVMTxID)
+						if err != nil {
+							fmt.Println(err)
+							continue
+						}
+
+						burnData, err := abiutil.UnpackBurnTxInputData(evmTx.Data)
+						if err != nil {
+							fmt.Println("[release] unable to read burn tx:", err)
+							continue
+						}
+
+						// validate burn entry against evm tx
+						err = utils.ValidateBurnEntry(burnEntry, burnData)
+						if err != nil {
+							fmt.Println("[release] burn entry validation failed:", err)
+							continue
+						}
+
+						// parse accumulate txid
+						txid, err := acmeurl.ParseTxID(burnEntry.TxHash)
+						if err != nil {
+							fmt.Println(err)
+							continue
+						}
+
+						remoteTxHash := txid.Hash()
+
+						// parse accumulate tx
+						tx, err := a.QueryTokenTx(&accumulate.Params{URL: burnEntry.TxHash})
+						if err != nil {
+							fmt.Println(err)
+							continue
+						}
+
+						// validate accumulate tx against evm tx
+						err = utils.ValidateReleaseTx(tx.Data, burnData)
+						if err != nil {
+							fmt.Println("[release] accumulate tx validation failed:", err)
+							continue
+						}
+
+						// sign accumulate tx
+						txhash, err := a.RemoteTransaction(hex.EncodeToString(remoteTxHash[:]))
+						if err != nil {
+							fmt.Println("[release] tx failed:", err)
+							continue
+						}
+
+						fmt.Println("[release] tx sent:", txhash)
+
+						// sign data entry
+						txhash, err = a.RemoteTransaction(entryhash)
+						if err != nil {
+							fmt.Println("[release] tx failed:", err)
+							continue
+						}
+
+						fmt.Println("[release] tx sent:", txhash)
+
+					}
 				}
 
-			} else if global.IsAudit {
+			}
 
-				fmt.Println("[release] Checking pending chain of", releaseQueue)
+		case <-die:
+			return
+		}
 
-				pending, err := a.QueryPendingChain(&accumulate.Params{URL: releaseQueue})
-				if err != nil {
-					fmt.Println("[release] can not get pending data entries:", err)
-					break
+	}
+
+}
+
+// processNewDeposits
+func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge string, die chan bool) {
+
+	for {
+
+		select {
+		default:
+
+			time.Sleep(time.Duration(10) * time.Second)
+
+			if global.IsOnline {
+
+				if global.IsLeader {
+
+					for _, token := range global.Tokens.Items {
+
+						mintQueue := accumulate.GenerateMintDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_MINT_QUEUE, token.Symbol)
+
+						fmt.Println("[mint] Checking pending chain of", mintQueue)
+
+						pendingEntries, err := a.QueryPendingChain(&accumulate.Params{URL: mintQueue})
+						if err != nil {
+							fmt.Println("[mint] Stopping the process, unable to get pending chain:", err)
+							continue
+						}
+
+						// if there are any pending entries, do not produce new tx
+						if len(pendingEntries.Items) > 0 {
+							fmt.Println("[mint] Stopping the process, found pending entries in", mintQueue)
+							continue
+						}
+
+						fmt.Println("[mint] Getting seq number from the latest entry of", mintQueue)
+						latestMintEntry, err := a.QueryLatestDataEntry(&accumulate.Params{URL: mintQueue})
+
+						// if Accumulate does not return seq number, shut down to prevent double minting
+						if err != nil {
+							fmt.Println("[mint] Unable to get seq number:", err)
+							continue
+						}
+
+						// parse latest mint entry to find out seq number
+						mintEntry, err := schema.ParseDepositEvent(latestMintEntry.Data)
+						if err != nil {
+							fmt.Println("[mint] Unable to parse deposit event from data entry", err)
+							continue
+						}
+
+						// looking for accumulate token txs starting from latest height+1
+						start := mintEntry.Amount + 1
+						if LatestCheckedDeposits[token.Symbol] > mintEntry.Amount {
+							start = LatestCheckedDeposits[token.Symbol] + 1
+						}
+
+						tokenAccount := accumulate.GenerateTokenAccount(a.ADI, int64(e.ChainId), token.Symbol)
+
+						fmt.Println("[mint] Parsing new accumulate token txs in", tokenAccount, "starting from seq number", start)
+
+						txs, err := a.QueryTxHistory(&accumulate.Params{URL: tokenAccount, Start: start, Count: 100})
+						if err != nil {
+							fmt.Println("[mint] Unable to get tx history for", tokenAccount, err)
+							continue
+						}
+
+						cursor := start + int64(len(txs.Items)) - 1
+						log.Debug("Found ", len(txs.Items), " txs in ", tokenAccount, " seq from ", start, " to ", cursor)
+
+						for i, tx := range txs.Items {
+
+							// cursor = current seq number
+							cursor = int64(i) + start
+
+							// validate tx
+							fmt.Println("[mint] Validating tx", tx.TxHash, "seq number", cursor)
+							err := utils.ValidateDepositTx(tx)
+							if err != nil {
+								fmt.Println("[mint] tx validation failed:", err)
+								continue
+							}
+
+							// validate cause tx
+							cause, err := a.QueryTokenTx(&accumulate.Params{URL: tx.Data.Cause})
+							if err != nil {
+								fmt.Println("[mint] can not get cause tx:", err)
+								// if we are here, then something happened on the accumulate api side
+								// reset cursor and break to start over
+								cursor = start - 1
+								break
+							}
+
+							err = utils.ValidateCauseTx(cause)
+							if err != nil {
+								fmt.Println("[mint] cause tx validation failed:", err)
+								continue
+							}
+
+							// if we found valid deposit, break here
+							// TO DO: generate gnosis safe tx
+							// TO DO: generate accumulate data entry
+							// TO DO: submit ethereum tx
+
+							// L1. check for any pending entries, if no:
+							// L2. find new deposit, if yes:
+							// L3. check if there are any unprocessed gnosis safe tx, if no:
+							// L4. create gnosis safe tx
+							// L5. create data entry in mint queue
+
+							// A1. check for pending entries
+							// A2. validate gnosis safe tx
+							// A3. sign gnosis safe tx
+							// A4. sign accumulate data entry
+
+							// L-ETH-1: check for new gnosis safe tx
+							// L-ETH-2: submit gnosis safe tx
+							// check what happens if submit with too low gas!
+
+							break
+						}
+
+						LatestCheckedDeposits[token.Symbol] = cursor
+
+					}
+
+				} else if global.IsAudit {
+
+					for _, token := range global.Tokens.Items {
+
+						mintQueue := accumulate.GenerateMintDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_MINT_QUEUE, token.Symbol)
+
+						fmt.Println("[mint] Checking pending chain of", mintQueue)
+
+						pending, err := a.QueryPendingChain(&accumulate.Params{URL: mintQueue})
+						if err != nil {
+							fmt.Println("[mint] can not get pending data entries:", err)
+							continue
+						}
+
+						// if no pending entries, shut down
+						if len(pending.Items) == 0 {
+							fmt.Println("[mint] Stopping the process, no pending entries found in", mintQueue)
+							continue
+						}
+
+					}
 				}
-
-				// if no pending entries, shut down
-				if len(pending.Items) == 0 {
-					fmt.Println("[release] Shutting down, no pending entries found in", releaseQueue)
-					break
-				}
-
-				fmt.Println("[release] Getting block height from the latest entry of", releaseQueue)
-				latestReleaseEntry, err := a.QueryLatestDataEntry(&accumulate.Params{URL: releaseQueue})
-
-				// if Accumulate does not return blockheight, shut down to prevent double spending
-				if err != nil {
-					fmt.Println("[release] Unable to get block height:", err)
-					break
-				}
-
-				// parse latest burn entry to find out evm blockHeight
-				latestCompletedBurn, err := schema.ParseBurnEvent(latestReleaseEntry.Data)
-				if err != nil {
-					fmt.Println("[release]", err)
-					break
-				}
-
-				// looking for pending tx with blockheight starting from latest height+1
-				start := latestCompletedBurn.BlockHeight + 1
-
-				for _, entryhash := range pending.Items {
-
-					fmt.Println("[release] processing pending entry", entryhash)
-
-					entryURL := entryhash + "@" + releaseQueue
-					entry, err := a.QueryDataEntry(&accumulate.Params{URL: entryURL})
-					if err != nil {
-						fmt.Println("[release] Unable to get data entry", err)
-						continue
-					}
-
-					burnEntry, err := schema.ParseBurnEvent(entry.Data)
-					if err != nil {
-						fmt.Println("[release] Unable to parse burn event from data entry", err)
-						continue
-					}
-
-					fmt.Println("start", start, "event blockheight", burnEntry.BlockHeight)
-
-					// check block height to avoid old txs
-					if int64(burnEntry.BlockHeight) < start {
-						fmt.Println("[release] Invalid height, expected height >=", start)
-						continue
-					}
-
-					// find token
-					token := utils.SearchEVMToken(burnEntry.TokenAddress)
-
-					// skip if no token found
-					if token == nil {
-						continue
-					}
-
-					fmt.Println("[release] Found new pending tx:", burnEntry.TxHash, "- Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
-					fmt.Println("[release] Checking corresponding EVM tx:", burnEntry.EVMTxID)
-
-					// parse evm tx
-					evmTx, err := e.GetTx(burnEntry.EVMTxID)
-					if err != nil {
-						fmt.Println(err)
-						continue
-					}
-
-					burnData, err := abiutil.UnpackBurnTxInputData(evmTx.Data)
-					if err != nil {
-						fmt.Println("[release] unable to read burn tx:", err)
-						continue
-					}
-
-					// validate burn entry against evm tx
-					err = utils.ValidateBurnEntry(burnEntry, burnData)
-					if err != nil {
-						fmt.Println("[release] burn entry validation failed:", err)
-						continue
-					}
-
-					// parse accumulate txid
-					txid, err := acmeurl.ParseTxID(burnEntry.TxHash)
-					if err != nil {
-						fmt.Println(err)
-						continue
-					}
-
-					remoteTxHash := txid.Hash()
-
-					// parse accumulate tx
-					tx, err := a.QueryTokenTx(&accumulate.Params{URL: burnEntry.TxHash})
-					if err != nil {
-						fmt.Println(err)
-						continue
-					}
-
-					// validate accumulate tx against evm tx
-					err = utils.ValidateReleaseTx(tx.Data, burnData)
-					if err != nil {
-						fmt.Println("[release] accumulate tx validation failed:", err)
-						continue
-					}
-
-					// sign accumulate tx
-					txhash, err := a.RemoteTransaction(hex.EncodeToString(remoteTxHash[:]))
-					if err != nil {
-						fmt.Println("[release] tx failed:", err)
-						continue
-					}
-
-					fmt.Println("[release] tx sent:", txhash)
-
-					// sign data entry
-					txhash, err = a.RemoteTransaction(entryhash)
-					if err != nil {
-						fmt.Println("[release] tx failed:", err)
-						continue
-					}
-
-					fmt.Println("[release] tx sent:", txhash)
-
-				}
-
 			}
 
 		case <-die:

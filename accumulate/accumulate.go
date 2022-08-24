@@ -15,18 +15,21 @@ import (
 )
 
 const (
-	ACC_KEYBOOK            = "book" // bridge ADI keybook
-	ACC_KEYPAGE            = "1"
-	ACC_LEADER             = "leader"  // data account: current leader (pubkeyhash)
-	ACC_TOKEN_REGISTRY     = "tokens"  // data account: token registry (accumulate token address, evm token address, evm chainid)
-	ACC_BRIDGE_FEES        = "fees"    // data account: bridge fees
-	ACC_MINT_QUEUE         = "mint"    // data account: mint queue, {chainid}:mint
-	ACC_RELEASE_QUEUE      = "release" // data account: release queue, {chainid}:release
-	ACC_BRIDGE_STATUS      = "status"    // data account: status (1 = on, 0 = off)
-	MINT_QUEUE_VERSION     = "v1"      // validate burn events data entries
-	RELEASE_QUEUE_VERSION  = "v1"      // validate deposit list data entries
-	SIGNATURE_TYPE         = "ed25519"
-	ZERO_HASH              = "0000000000000000000000000000000000000000000000000000000000000000"
+	ACC_KEYBOOK                 = "book"    // bridge ADI keybook
+	ACC_KEYPAGE                 = "1"       // bridge ADI keypage
+	ACC_LEADER                  = "leader"  // data account: current leader (pubkeyhash)
+	ACC_TOKEN_REGISTRY          = "tokens"  // data account: token registry (accumulate token address, evm token address, evm chainid)
+	ACC_BRIDGE_FEES             = "fees"    // data account: bridge fees
+	ACC_MINT_QUEUE              = "mint"    // data account: mint queue, {chainid}:mint
+	ACC_RELEASE_QUEUE           = "release" // data account: release queue, {chainid}:release
+	ACC_BRIDGE_STATUS           = "status"  // data account: status (1 = on, 0 = off)
+	TOKEN_REGISTRY_VERSION      = "v1"      // validate token registry data entries
+	MINT_QUEUE_VERSION          = "v1"      // validate burn events data entries
+	RELEASE_QUEUE_VERSION       = "v1"      // validate deposit list data entries
+	SIGNATURE_TYPE              = "ed25519"
+	ZERO_HASH                   = "0000000000000000000000000000000000000000000000000000000000000000"
+	TX_TYPE_SYNTH_TOKEN_DEPOSIT = "syntheticDepositTokens"
+	TX_TYPE_SEND_TOKENS         = "sendTokens"
 )
 
 type AccumulateClient struct {

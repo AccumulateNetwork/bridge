@@ -104,3 +104,38 @@ func ParseBurnEvent(entry *accumulate.DataEntry) (*BurnEvent, error) {
 	return burnEntry, nil
 
 }
+
+// ParseDepositEvent parses accumulate data entry into minut event and validates it
+func ParseDepositEvent(entry *accumulate.DataEntry) (*DepositEvent, error) {
+
+	mintEntry := &DepositEvent{}
+
+	// check version
+	if len(entry.Entry.Data) < 2 {
+		return nil, fmt.Errorf("looking for at least 2 data fields in entry, found %d", len(entry.Entry.Data))
+	}
+
+	version, err := hex.DecodeString(entry.Entry.Data[0])
+	if err != nil {
+		return nil, fmt.Errorf("can not decode entry data")
+	}
+
+	if !bytes.Equal(version, []byte(accumulate.MINT_QUEUE_VERSION)) {
+		return nil, fmt.Errorf("entry version is not %s", accumulate.MINT_QUEUE_VERSION)
+	}
+
+	// convert entry data to bytes
+	mintEventBytes, err := hex.DecodeString(entry.Entry.Data[1])
+	if err != nil {
+		return nil, fmt.Errorf("can not decode entry data")
+	}
+
+	// try to unmarshal the entry
+	err = json.Unmarshal(mintEventBytes, mintEntry)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal entry data")
+	}
+
+	return mintEntry, nil
+
+}

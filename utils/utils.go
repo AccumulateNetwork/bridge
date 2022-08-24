@@ -74,8 +74,6 @@ func ValidateBurnEntry(entry *schema.BurnEvent, tx *abiutil.BurnData) error {
 
 func ValidateReleaseTx(releaseTx *accumulate.TokenTx, tx *abiutil.BurnData) error {
 
-	log.Debug("Validating release tx")
-
 	if len(releaseTx.To) != 1 {
 		return fmt.Errorf("expected 1 receiver (tx.Data.To), received=%d", len(releaseTx.To))
 	}
@@ -103,6 +101,38 @@ func ValidateReleaseTx(releaseTx *accumulate.TokenTx, tx *abiutil.BurnData) erro
 	log.Debug("release tx destination=", releaseTx.To[0].URL, ", tx destination=", tx.Destination)
 	if releaseTxTo.Authority != txDestination.Authority || releaseTxTo.Path != txDestination.Path {
 		return fmt.Errorf("entry destination=%s, tx destination=%s", releaseTx.To[0].URL, tx.Destination)
+	}
+
+	return nil
+
+}
+
+func ValidateDepositTx(depositTx *accumulate.QueryTokenTxResponse) error {
+
+	if depositTx.Type != accumulate.TX_TYPE_SYNTH_TOKEN_DEPOSIT {
+		return fmt.Errorf("expected tx type %s, got %s", accumulate.TX_TYPE_SYNTH_TOKEN_DEPOSIT, depositTx.Type)
+	}
+
+	if depositTx.Data.Cause == "" {
+		return fmt.Errorf("got empty cause")
+	}
+
+	if depositTx.Data.IsRefund {
+		return fmt.Errorf("got refund tx")
+	}
+
+	return nil
+
+}
+
+func ValidateCauseTx(causeTx *accumulate.QueryTokenTxResponse) error {
+
+	if causeTx.Type != accumulate.TX_TYPE_SEND_TOKENS {
+		return fmt.Errorf("expected tx type %s, got %s", accumulate.TX_TYPE_SEND_TOKENS, causeTx.Type)
+	}
+
+	if causeTx.Transaction.Header.Memo == "" {
+		return fmt.Errorf("no memo found")
 	}
 
 	return nil
