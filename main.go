@@ -26,6 +26,8 @@ import (
 )
 
 const LEADER_MIN_DURATION = 1
+const NUMBER_OF_ACCUMULATE_TOKEN_TXS = 100
+const NUMBER_OF_TOKEN_REGISTRY_ENTRIES = 1000
 
 var LatestCheckedDeposits map[string]int64
 
@@ -130,7 +132,7 @@ func start(configFile string) {
 		// token list is mandatory, so return fatal error in case of error
 		tokensDataAccount := filepath.Join(conf.ACME.BridgeADI, accumulate.ACC_TOKEN_REGISTRY)
 		fmt.Println("Getting Accumulate tokens from", tokensDataAccount)
-		tokens, err := a.QueryDataSet(&accumulate.Params{URL: tokensDataAccount, Count: 1000, Expand: true})
+		tokens, err := a.QueryDataSet(&accumulate.Params{URL: tokensDataAccount, Count: int64(NUMBER_OF_TOKEN_REGISTRY_ENTRIES), Expand: true})
 		if err != nil {
 			fmt.Println("unable to get token list from", tokensDataAccount)
 			log.Fatal(err)
@@ -717,65 +719,78 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge
 
 						fmt.Println("[mint] Parsing new accumulate token txs in", tokenAccount, "starting from seq number", start)
 
-						txs, err := a.QueryTxHistory(&accumulate.Params{URL: tokenAccount, Start: start, Count: 100})
+						count := int64(NUMBER_OF_ACCUMULATE_TOKEN_TXS)
+
+						txs, err := a.QueryTxHistory(&accumulate.Params{URL: tokenAccount, Start: start, Count: count})
 						if err != nil {
 							fmt.Println("[mint] Unable to get tx history for", tokenAccount, err)
 							continue
 						}
 
-						cursor := start + int64(len(txs.Items)) - 1
-						log.Debug("Found ", len(txs.Items), " txs in ", tokenAccount, " seq from ", start, " to ", cursor)
+						fmt.Println("[mint] Found", len(txs.Items), "txs in", tokenAccount, "seq number from", start, "to", start+count)
 
-						for i, tx := range txs.Items {
+						// cursor is to track seq number and update it in map in the end
+						cursor := start
 
-							// cursor = current seq number
-							cursor = int64(i) + start
+						if len(txs.Items) > 0 {
 
-							// validate tx
-							fmt.Println("[mint] Validating tx", tx.TxHash, "seq number", cursor)
-							err := utils.ValidateDepositTx(tx)
-							if err != nil {
-								fmt.Println("[mint] tx validation failed:", err)
-								continue
-							}
+							for i, tx := range txs.Items {
 
-							// validate cause tx
-							cause, err := a.QueryTokenTx(&accumulate.Params{URL: tx.Data.Cause})
-							if err != nil {
-								fmt.Println("[mint] can not get cause tx:", err)
-								// if we are here, then something happened on the accumulate api side
-								// reset cursor and break to start over
-								cursor = start - 1
+								// cursor = current seq number
+								cursor = int64(i) + start
+
+								// validate tx
+								fmt.Println("[mint] Validating tx", tx.TxHash, "seq number", cursor)
+								err := utils.ValidateDepositTx(tx)
+								if err != nil {
+									fmt.Println("[mint] tx validation failed:", err)
+									continue
+								}
+
+								// validate cause tx
+								cause, err := a.QueryTokenTx(&accumulate.Params{URL: tx.Data.Cause})
+								if err != nil {
+									fmt.Println("[mint] can not get cause tx:", err)
+									// if we are here, then something happened on the accumulate api side
+									// reset cursor and break to start over
+									cursor = start - 1
+									break
+								}
+
+								err = utils.ValidateCauseTx(cause)
+								if err != nil {
+									fmt.Println("[mint] cause tx validation failed:", err)
+									continue
+								}
+
+								// if we found valid deposit, break here
+								// TO DO: generate gnosis safe tx
+								// TO DO: generate accumulate data entry
+								// TO DO: submit ethereum tx
+
+								// L1. check for any pending entries, if no:
+								// L2. find new deposit, if yes:
+								// L3. check if there are any unprocessed gnosis safe tx, if no:
+								// L4. create gnosis safe tx
+								// L5. create data entry in mint queue
+
+								// A1. check for pending entries
+								// A2. validate gnosis safe tx
+								// A3. sign gnosis safe tx
+								// A4. sign accumulate data entry
+
+								// L-ETH-1: check for new gnosis safe tx
+								// L-ETH-2: submit gnosis safe tx
+								// check what happens if submit with too low gas!
+
 								break
 							}
 
-							err = utils.ValidateCauseTx(cause)
-							if err != nil {
-								fmt.Println("[mint] cause tx validation failed:", err)
-								continue
-							}
+						} else {
 
-							// if we found valid deposit, break here
-							// TO DO: generate gnosis safe tx
-							// TO DO: generate accumulate data entry
-							// TO DO: submit ethereum tx
+							// if no tx found, move cursor back by 1 to start over from the same seq number
+							cursor--
 
-							// L1. check for any pending entries, if no:
-							// L2. find new deposit, if yes:
-							// L3. check if there are any unprocessed gnosis safe tx, if no:
-							// L4. create gnosis safe tx
-							// L5. create data entry in mint queue
-
-							// A1. check for pending entries
-							// A2. validate gnosis safe tx
-							// A3. sign gnosis safe tx
-							// A4. sign accumulate data entry
-
-							// L-ETH-1: check for new gnosis safe tx
-							// L-ETH-2: submit gnosis safe tx
-							// check what happens if submit with too low gas!
-
-							break
 						}
 
 						LatestCheckedDeposits[token.Symbol] = cursor
