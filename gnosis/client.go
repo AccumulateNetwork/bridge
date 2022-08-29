@@ -3,6 +3,7 @@ package gnosis
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -72,6 +73,10 @@ type MultisigTxConfirmation struct {
 	SignatureType   string     `json:"signatureType"`
 }
 
+type ErrorResponse struct {
+	NonFieldErrors []string `json:"nonFieldErrors"`
+}
+
 // GetSafe gets safe info and current nonce
 func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 
@@ -91,29 +96,30 @@ func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 }
 
 // CreateSafeMultisigTx submits multisig tx to gnosis safe API
-func (g *Gnosis) CreateSafeMultisigTx(data *NewMultisigTx) (*json.RawMessage, error) {
+func (g *Gnosis) CreateSafeMultisigTx(data *NewMultisigTx) error {
 
 	params, err := json.Marshal(data)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	body, err := g.makeRequest("safes/"+g.SafeAddress+"/multisig-transactions/", params)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var resp json.RawMessage
+	var resp ErrorResponse
 
 	// gnosis safe api returns empty response if everything is OK
 	// unmarshal message only if body is not empty
 	if len(body) > 0 {
 		if err = json.Unmarshal(body, &resp); err != nil {
-			return nil, err
+			return err
 		}
+		return fmt.Errorf(resp.NonFieldErrors[0])
 	}
 
-	return nil, nil
+	return nil
 
 }
 

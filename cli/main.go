@@ -106,19 +106,10 @@ func main() {
 					tx.Sender = g.PublicKey.Hex()
 					tx.Signature = hexutil.Encode(signature)
 
-					resp, err := g.CreateSafeMultisigTx(&tx)
+					err = g.CreateSafeMultisigTx(&tx)
 					if err != nil {
 						fmt.Print("gnosis safe api error: ")
 						return err
-					}
-
-					if resp != nil {
-						respText, err := json.Marshal(&resp)
-						if err != nil {
-							fmt.Print("can not marshal gnosis api response: ")
-							return err
-						}
-						fmt.Print(string(respText))
 					}
 
 					return nil
