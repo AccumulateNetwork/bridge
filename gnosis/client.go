@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -124,6 +125,24 @@ func (g *Gnosis) CreateSafeMultisigTx(data *NewMultisigTx) error {
 	}
 
 	return nil
+
+}
+
+// GetSafeMultisigTx gets multisig tx from gnosis safe API
+func (g *Gnosis) GetSafeMultisigTxByNonce(nonce int64) (*MultisigTxs, error) {
+
+	body, err := g.makeRequest("safes/"+g.SafeAddress+"/multisig-transactions/?nonce="+strconv.FormatInt(nonce, 10), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp MultisigTxs
+
+	if err = json.Unmarshal(body, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 
 }
 

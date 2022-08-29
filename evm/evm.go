@@ -12,11 +12,13 @@ import (
 )
 
 type EVMClient struct {
-	API        string
-	ChainId    int
-	PrivateKey *ecdsa.PrivateKey
-	PublicKey  common.Address
-	Client     *ethclient.Client
+	API            string
+	ChainId        int
+	PrivateKey     *ecdsa.PrivateKey
+	PublicKey      common.Address
+	Client         *ethclient.Client
+	MaxGasFee      int64
+	MaxPriorityFee int64
 }
 
 // NewEVMClient constructs the EVM client
@@ -29,6 +31,8 @@ func NewEVMClient(conf *config.Config) (*EVMClient, error) {
 	}
 
 	c.API = conf.EVM.Node
+	c.MaxGasFee = conf.EVM.MaxGasFee
+	c.MaxPriorityFee = conf.EVM.MaxPriorityFee
 
 	client, err := ethclient.Dial(conf.EVM.Node)
 	if err != nil {

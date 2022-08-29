@@ -21,6 +21,7 @@ import (
 	"github.com/AccumulateNetwork/bridge/schema"
 	acmeurl "github.com/AccumulateNetwork/bridge/url"
 	"github.com/AccumulateNetwork/bridge/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/go-playground/validator/v10"
@@ -158,7 +159,8 @@ func start(configFile string) {
 		// go debugLeader(die)
 
 		// go processBurnEvents(a, e, conf.EVM.BridgeAddress, die)
-		go processNewDeposits(a, e, g, conf.EVM.BridgeAddress, die)
+		go processNewDeposits(a, e, g, die)
+		go submitEVMTxs(e, g, die)
 
 		// init Accumulate Bridge API
 		fmt.Println("Starting Accumulate Bridge API at port", conf.App.APIPort)
@@ -664,7 +666,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 }
 
 // processNewDeposits
-func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gnosis.Gnosis, bridge string, die chan bool) {
+func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gnosis.Gnosis, die chan bool) {
 
 	for {
 
@@ -1065,6 +1067,85 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 						}
 
 					}
+				}
+			}
+
+		case <-die:
+			return
+		}
+
+	}
+
+}
+
+// submitEVMTxs
+func submitEVMTxs(e *evm.EVMClient, g *gnosis.Gnosis, die chan bool) {
+
+	for {
+
+		select {
+		default:
+
+			time.Sleep(time.Duration(10) * time.Second)
+
+			if global.IsOnline {
+
+				if global.IsLeader {
+
+					// get gnosis safe
+					safe, err := g.GetSafe()
+					if err != nil {
+						fmt.Println("[submit] can not get gnosis safe:", err)
+						break
+					}
+
+					txs, err := g.GetSafeMultisigTxByNonce(safe.Nonce)
+					if err != nil {
+						fmt.Println("[submit] can not get gnosis safe txs:", err)
+						break
+					}
+
+					for _, tx := range txs.Results {
+
+						fmt.Println("[submit] found safetxhash:", tx.SafeTxHash)
+
+						// check number of signatures
+						if len(tx.Confirmations) < int(safe.Threshold) {
+							fmt.Println("[submit]", len(tx.Confirmations), "signatures,", safe.Threshold, "required")
+							break
+						}
+
+						// concatenate signatures
+						var sig []byte
+						for _, con := range tx.Confirmations {
+							sigBytes, err := hexutil.Decode(con.Signature)
+							if err != nil {
+								fmt.Println("[submit] can not decode signature hex:", err)
+								break
+							}
+							sig = append(sig, sigBytes...)
+						}
+
+						// generate tx input data
+						txData, err := abiutil.GenerateExecTransaction(g.BridgeAddress, tx.Data, hexutil.Encode(sig))
+						if err != nil {
+							fmt.Println("[submit] can not generate tx data:", err)
+							break
+						}
+
+						to := common.HexToAddress(g.SafeAddress)
+
+						// submit ethereum tx
+						sentTx, err := e.SubmitEIP1559Tx(gnosis.MINT_GAS_LIMIT, e.MaxGasFee, e.MaxPriorityFee, &to, 0, txData)
+						if err != nil {
+							fmt.Println("[submit] ethereum tx error:", err)
+							break
+						}
+
+						fmt.Println("[submit] tx sent:", sentTx.Hash().Hex())
+
+					}
+
 				}
 			}
 

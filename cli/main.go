@@ -148,8 +148,15 @@ func main() {
 						return err
 					}
 
-					gasPrice := conf.EVM.MaxGasFee
-					priorityFee := conf.EVM.MaxPriorityFee
+					// setup evm client
+					cl, err := evm.NewEVMClient(conf)
+					if err != nil {
+						fmt.Print("can not init evm client: ")
+						return err
+					}
+
+					gasPrice := cl.MaxGasFee
+					priorityFee := cl.MaxPriorityFee
 
 					// parse optional args
 					if c.Args().Get(1) != "" {
@@ -171,13 +178,6 @@ func main() {
 					g, err := gnosis.NewGnosis(conf)
 					if err != nil {
 						fmt.Print("can not init gnosis module: ")
-						return err
-					}
-
-					// setup evm client
-					cl, err := evm.NewEVMClient(conf)
-					if err != nil {
-						fmt.Print("can not init evm client: ")
 						return err
 					}
 
