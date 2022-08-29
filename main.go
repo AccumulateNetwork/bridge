@@ -160,7 +160,7 @@ func start(configFile string) {
 		go getLeader(a, die)
 		// go debugLeader(die)
 
-		// go processBurnEvents(a, e, conf.EVM.BridgeAddress, die)
+		go processBurnEvents(a, e, conf.EVM.BridgeAddress, die)
 		go processNewDeposits(a, e, g, die)
 		go submitEVMTxs(e, g, die)
 
@@ -675,7 +675,7 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 		select {
 		default:
 
-			time.Sleep(time.Duration(10) * time.Second)
+			time.Sleep(time.Duration(30) * time.Second)
 
 			if global.IsOnline {
 
@@ -1088,7 +1088,7 @@ func submitEVMTxs(e *evm.EVMClient, g *gnosis.Gnosis, die chan bool) {
 		select {
 		default:
 
-			time.Sleep(time.Duration(10) * time.Second)
+			time.Sleep(time.Duration(30) * time.Second)
 
 			if global.IsOnline {
 
