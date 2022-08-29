@@ -65,6 +65,10 @@ type MultisigTx struct {
 	Confirmations         []*MultisigTxConfirmation `json:"confirmations"`
 }
 
+type MultisigTxs struct {
+	Results []*MultisigTx `json:"results"`
+}
+
 type MultisigTxConfirmation struct {
 	Owner           string     `json:"owner"`
 	SubmissionDate  *time.Time `json:"submissionDate"`
@@ -132,6 +136,24 @@ func (g *Gnosis) GetSafeMultisigTx(safeTxHash string) (*MultisigTx, error) {
 	}
 
 	var resp MultisigTx
+
+	if err = json.Unmarshal(body, &resp); err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+
+}
+
+// GetSafeMultisigTxs gets multisig txs from gnosis safe API
+func (g *Gnosis) GetSafeMultisigTxs() (*MultisigTxs, error) {
+
+	body, err := g.makeRequest("safes/"+g.SafeAddress+"/multisig-transactions/", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resp MultisigTxs
 
 	if err = json.Unmarshal(body, &resp); err != nil {
 		return nil, err
