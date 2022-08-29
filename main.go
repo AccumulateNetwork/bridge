@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"math/big"
 	"os/user"
 	"path/filepath"
 	"time"
@@ -20,6 +21,7 @@ import (
 	"github.com/AccumulateNetwork/bridge/schema"
 	acmeurl "github.com/AccumulateNetwork/bridge/url"
 	"github.com/AccumulateNetwork/bridge/utils"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/gommon/log"
@@ -156,7 +158,7 @@ func start(configFile string) {
 		// go debugLeader(die)
 
 		// go processBurnEvents(a, e, conf.EVM.BridgeAddress, die)
-		go processNewDeposits(a, e, conf.EVM.BridgeAddress, die)
+		go processNewDeposits(a, e, g, conf.EVM.BridgeAddress, die)
 
 		// init Accumulate Bridge API
 		fmt.Println("Starting Accumulate Bridge API at port", conf.App.APIPort)
@@ -568,7 +570,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 							continue
 						}
 
-						fmt.Println("start", start, "event blockheight", burnEntry.BlockHeight)
+						fmt.Println("[release] start", start, "event blockheight", burnEntry.BlockHeight)
 
 						// check block height to avoid old txs
 						if int64(burnEntry.BlockHeight) < start {
@@ -662,7 +664,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 }
 
 // processNewDeposits
-func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge string, die chan bool) {
+func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gnosis.Gnosis, bridge string, die chan bool) {
 
 	for {
 
@@ -676,6 +678,27 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge
 				if global.IsLeader {
 
 					for _, token := range global.Tokens.Items {
+
+						// get gnosis safe
+						safe, err := g.GetSafe()
+						if err != nil {
+							fmt.Println("[mint] can not get gnosis safe:", err)
+							break
+						}
+
+						// check if there are pending txs at current nonce
+						safeTxs, err := g.GetSafeMultisigTxs()
+						if err != nil {
+							fmt.Println("[mint] can not get gnosis safe multisig txs:", err)
+							break
+						}
+
+						if len(safeTxs.Results) > 0 {
+							if safeTxs.Results[0].Nonce >= safe.Nonce {
+								fmt.Println("[mint] stopping the process, gnosis safe has unprocessed tx with nonce", safeTxs.Results[0].Nonce)
+								break
+							}
+						}
 
 						mintQueue := accumulate.GenerateMintDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_MINT_QUEUE, token.Symbol)
 
@@ -710,8 +733,8 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge
 						}
 
 						// looking for accumulate token txs starting from latest height+1
-						start := mintEntry.Amount + 1
-						if LatestCheckedDeposits[token.Symbol] > mintEntry.Amount {
+						start := mintEntry.SeqNumber + 1
+						if LatestCheckedDeposits[token.Symbol] > mintEntry.SeqNumber {
 							start = LatestCheckedDeposits[token.Symbol] + 1
 						}
 
@@ -747,7 +770,7 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge
 									continue
 								}
 
-								// validate cause tx
+								// query cause tx
 								cause, err := a.QueryTokenTx(&accumulate.Params{URL: tx.Data.Cause})
 								if err != nil {
 									fmt.Println("[mint] can not get cause tx:", err)
@@ -757,33 +780,102 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge
 									break
 								}
 
+								// validate cause tx
 								err = utils.ValidateCauseTx(cause)
 								if err != nil {
 									fmt.Println("[mint] cause tx validation failed:", err)
 									continue
 								}
 
-								// if we found valid deposit, break here
-								// TO DO: generate gnosis safe tx
-								// TO DO: generate accumulate data entry
-								// TO DO: submit ethereum tx
+								amount := new(big.Int)
+								amount, ok := amount.SetString(tx.Data.Amount, 10)
+								if !ok {
+									fmt.Println("[mint] unable to convert tx amount")
+									// if we are here, then something unexpected happened
+									// reset cursor and break to start over
+									cursor = start - 1
+									break
+								}
 
-								// L1. check for any pending entries, if no:
-								// L2. find new deposit, if yes:
-								// L3. check if there are any unprocessed gnosis safe tx, if no:
-								// L4. create gnosis safe tx
-								// L5. create data entry in mint queue
+								// create mintEntry
+								mintEntry := &schema.DepositEvent{}
+								mintEntry.Amount = amount.Int64()
+								mintEntry.Destination = cause.Transaction.Header.Memo
+								mintEntry.SeqNumber = cursor
+								mintEntry.Source = cause.Data.From
+								mintEntry.TokenAddress = token.EVMAddress
+								mintEntry.TokenURL = token.URL
+								mintEntry.TxID = tx.TxID
 
-								// A1. check for pending entries
-								// A2. validate gnosis safe tx
-								// A3. sign gnosis safe tx
-								// A4. sign accumulate data entry
+								// generate mint tx data
+								data, err := abiutil.GenerateMintTxData(token.EVMAddress, cause.Transaction.Header.Memo, amount)
+								if err != nil {
+									fmt.Println("[mint] can not generate mint tx:", err)
+									// if we are here, then something unexpected happened
+									// reset cursor and break to start over
+									cursor = start - 1
+									break
+								}
 
-								// L-ETH-1: check for new gnosis safe tx
-								// L-ETH-2: submit gnosis safe tx
-								// check what happens if submit with too low gas!
+								// generate gnosis safe tx
+								contractHash, signature, err := g.SignMintTx(token.EVMAddress, cause.Transaction.Header.Memo, amount)
+								if err != nil {
+									fmt.Println("[mint] can not sign mint tx:", err)
+									// if we are here, then something unexpected happened
+									// reset cursor and break to start over
+									cursor = start - 1
+									break
+								}
 
+								// submit multisig tx to the gnosis safe api
+								safeTx := gnosis.NewMultisigTx{}
+								safeTx.To = g.BridgeAddress
+								safeTx.Data = hexutil.Encode(data)
+								safeTx.GasToken = abiutil.ZERO_ADDR
+								safeTx.RefundReceiver = abiutil.ZERO_ADDR
+								safeTx.Nonce = safe.Nonce
+								safeTx.ContractTransactionHash = hexutil.Encode(contractHash)
+								safeTx.Sender = g.PublicKey.Hex()
+								safeTx.Signature = hexutil.Encode(signature)
+
+								err = g.CreateSafeMultisigTx(&safeTx)
+								if err != nil {
+									fmt.Println("[mint] gnosis safe api error:", err)
+									// if we are here, then something happened on the gnosis api side
+									// reset cursor and break to start over
+									cursor = start - 1
+									break
+								}
+
+								// create accumulate data entry
+								mintEntry.SafeTxHash = hexutil.Encode(contractHash)
+								mintEntry.SafeTxNonce = safe.Nonce
+
+								mintEntryBytes, err := json.Marshal(mintEntry)
+								if err != nil {
+									fmt.Println("[mint] can not marshal mint entry:", err)
+									// if we are here, then something unexpected happened
+									// reset cursor and break to start over
+									cursor = start - 1
+									break
+								}
+
+								var content [][]byte
+								content = append(content, []byte(accumulate.MINT_QUEUE_VERSION))
+								content = append(content, mintEntryBytes)
+
+								entryhash, err := a.WriteData(mintQueue, content)
+								if err != nil {
+									fmt.Println("[mint] data entry creation failed:", err)
+									// if we are here, then something happened on the accumulate api side
+									// reset cursor and break to start over
+									cursor = start - 1
+									break
+								}
+
+								fmt.Println("[mint] data entry created:", entryhash)
 								break
+
 							}
 
 						} else {
@@ -801,7 +893,15 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge
 
 					for _, token := range global.Tokens.Items {
 
+						// get gnosis safe
+						safe, err := g.GetSafe()
+						if err != nil {
+							fmt.Println("[mint] can not get gnosis safe:", err)
+							break
+						}
+
 						mintQueue := accumulate.GenerateMintDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_MINT_QUEUE, token.Symbol)
+						depositTokenAccount := accumulate.GenerateTokenAccount(a.ADI, int64(e.ChainId), token.Symbol)
 
 						fmt.Println("[mint] Checking pending chain of", mintQueue)
 
@@ -815,6 +915,153 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge
 						if len(pending.Items) == 0 {
 							fmt.Println("[mint] Stopping the process, no pending entries found in", mintQueue)
 							continue
+						}
+
+						fmt.Println("[mint] Getting sequence number from the latest entry of", mintQueue)
+						latestReleaseEntry, err := a.QueryLatestDataEntry(&accumulate.Params{URL: mintQueue})
+
+						// if Accumulate does not return sequence number, shut down to prevent double minting
+						if err != nil {
+							fmt.Println("[mint] Unable to get sequence number:", err)
+							break
+						}
+
+						// parse latest mint entry to find out sequence number
+						latestCompletedMint, err := schema.ParseDepositEvent(latestReleaseEntry.Data)
+						if err != nil {
+							fmt.Println("[mint]", err)
+							break
+						}
+
+						// looking for pending tx with sequence number starting from latest seq number+1
+						start := latestCompletedMint.SeqNumber + 1
+
+						for _, entryhash := range pending.Items {
+
+							fmt.Println("[mint] processing pending entry", entryhash)
+
+							entryURL := entryhash + "@" + mintQueue
+							entry, err := a.QueryDataEntry(&accumulate.Params{URL: entryURL})
+							if err != nil {
+								fmt.Println("[mint] Unable to get data entry", err)
+								continue
+							}
+
+							mintEntry, err := schema.ParseDepositEvent(entry.Data)
+							if err != nil {
+								fmt.Println("[mint] Unable to parse deposit event from data entry", err)
+								continue
+							}
+
+							fmt.Println("[mint] start", start, "event seq number", mintEntry.SeqNumber)
+
+							// check block height to avoid old txs
+							if int64(mintEntry.SeqNumber) < start {
+								fmt.Println("[mint] Invalid seq number, expected seq number >=", start)
+								continue
+							}
+
+							fmt.Println("[mint] Found new pending tx:", mintEntry.TxID, "- Minting", mintEntry.Amount, token.EVMSymbol, "to", mintEntry.Destination)
+							fmt.Println("[mint] Checking corresponding Accumulate tx seq number:", mintEntry.SeqNumber)
+
+							// parse tx using seq number
+							txs, err := a.QueryTxHistory(&accumulate.Params{URL: depositTokenAccount, Count: 1, Start: mintEntry.SeqNumber})
+							if err != nil {
+								fmt.Println(err)
+								continue
+							}
+
+							// if tx found
+							if len(txs.Items) > 0 {
+								fmt.Println("[mint] tx with seq number:", txs.Items[0].TxID)
+								fmt.Println("[mint] mint entry tx:", mintEntry.TxID)
+								// validate txid in mint entry
+								if txs.Items[0].TxID != mintEntry.TxID {
+									continue
+								}
+							} else {
+								fmt.Println("[mint] not found tx by seq number:", mintEntry.SeqNumber)
+								continue
+							}
+
+							// query cause tx
+							cause, err := a.QueryTokenTx(&accumulate.Params{URL: txs.Items[0].Data.Cause})
+							if err != nil {
+								fmt.Println("[mint] can not get cause tx:", err)
+								continue
+							}
+
+							// validate cause tx
+							err = utils.ValidateCauseTx(cause)
+							if err != nil {
+								fmt.Println("[mint] cause tx validation failed:", err)
+								continue
+							}
+
+							// validate mint entry against accumulate txs
+							err = utils.ValidateMintEntry(mintEntry, txs.Items[0], cause)
+							if err != nil {
+								fmt.Println("[mint] accumulate tx validation failed:", err)
+								continue
+							}
+
+							// check mint entry safe tx nonce
+							if mintEntry.SafeTxNonce != safe.Nonce {
+								fmt.Println("[mint] mint entry safe tx nonce:", mintEntry.SafeTxNonce, "safe nonce:", safe.Nonce)
+								continue
+							}
+
+							fmt.Println("[mint] Generating and signing gnosis safe tx")
+
+							// generate mint tx data
+							amount := big.NewInt(mintEntry.Amount)
+							data, err := abiutil.GenerateMintTxData(token.EVMAddress, cause.Transaction.Header.Memo, amount)
+							if err != nil {
+								fmt.Println("[mint] can not generate mint tx:", err)
+								continue
+							}
+
+							// generate gnosis safe tx
+							contractHash, signature, err := g.SignMintTx(token.EVMAddress, cause.Transaction.Header.Memo, amount)
+							if err != nil {
+								fmt.Println("[mint] can not sign mint tx:", err)
+								continue
+							}
+
+							// check if contract hash == mint entry safetxhash
+							if hexutil.Encode(contractHash) != mintEntry.SafeTxHash {
+								fmt.Println("[mint] mint entry safe tx hash:", mintEntry.SafeTxHash, "generated safe tx hash:", contractHash)
+								continue
+							}
+
+							// submit multisig tx to the gnosis safe api
+							safeTx := gnosis.NewMultisigTx{}
+							safeTx.To = g.BridgeAddress
+							safeTx.Data = hexutil.Encode(data)
+							safeTx.GasToken = abiutil.ZERO_ADDR
+							safeTx.RefundReceiver = abiutil.ZERO_ADDR
+							safeTx.Nonce = safe.Nonce
+							safeTx.ContractTransactionHash = hexutil.Encode(contractHash)
+							safeTx.Sender = g.PublicKey.Hex()
+							safeTx.Signature = hexutil.Encode(signature)
+
+							err = g.CreateSafeMultisigTx(&safeTx)
+							if err != nil {
+								fmt.Println("[mint] gnosis safe api error:", err)
+								continue
+							}
+
+							fmt.Println("[mint] gnosis safe tx signed: nonce", mintEntry.SafeTxNonce, "safeTxHash", mintEntry.SafeTxHash)
+
+							// sign data entry
+							txhash, err := a.RemoteTransaction(entryhash)
+							if err != nil {
+								fmt.Println("[mint] tx failed:", err)
+								continue
+							}
+
+							fmt.Println("[mint] tx sent:", txhash)
+
 						}
 
 					}

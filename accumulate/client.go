@@ -31,8 +31,8 @@ type TokenAccount struct {
 }
 
 type TokenTx struct {
-	From     string       `json:"from" validate:"required"`
-	To       []*TokenTxTo `json:"to" validate:"required"`
+	From     string       `json:"from"`
+	To       []*TokenTxTo `json:"to"`
 	Cause    string       `json:"cause"`
 	Source   string       `json:"source"`
 	Token    string       `json:"token"`
@@ -94,6 +94,7 @@ type QueryPendingChainResponse struct {
 type QueryTokenTxResponse struct {
 	Type        string   `json:"type" validate:"required"`
 	TxHash      string   `json:"transactionHash"`
+	TxID        string   `json:"txid"`
 	Data        *TokenTx `json:"data"`
 	Transaction struct {
 		Header struct {

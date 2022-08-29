@@ -60,7 +60,7 @@ type BurnEvent struct {
 
 // DepositEvent is an event of token deposit into bridge token account
 type DepositEvent struct {
-	TxHash       string `json:"txHash"`
+	TxID         string `json:"txid"`
 	Source       string `json:"source"`
 	TokenURL     string `json:"tokenURL"`
 	Amount       int64  `json:"amount"`
@@ -68,6 +68,7 @@ type DepositEvent struct {
 	Destination  string `json:"destination"`
 	TokenAddress string `json:"-"`
 	SafeTxHash   string `json:"safeTxHash"`
+	SafeTxNonce  int64  `json:"safeTxNonce"`
 }
 
 // ParseBurnEvent parses accumulate data entry into burn event and validates it

@@ -65,7 +65,7 @@ func ValidateBurnEntry(entry *schema.BurnEvent, tx *abiutil.BurnData) error {
 	log.Debug("entry token=", entry.TokenAddress, ", tx token=", tx.Token.Hex())
 	// case insensitive comparison
 	if !strings.EqualFold(entry.TokenAddress, tx.Token.Hex()) {
-		return fmt.Errorf("entry destination=%s, tx destination=%s", entry.Destination, tx.Destination)
+		return fmt.Errorf("entry token=%s, tx token=%s", entry.TokenAddress, tx.Token.Hex())
 	}
 
 	return nil
@@ -133,6 +133,36 @@ func ValidateCauseTx(causeTx *accumulate.QueryTokenTxResponse) error {
 
 	if causeTx.Transaction.Header.Memo == "" {
 		return fmt.Errorf("no memo found")
+	}
+
+	return nil
+
+}
+
+func ValidateMintEntry(entry *schema.DepositEvent, tx *accumulate.QueryTokenTxResponse, cause *accumulate.QueryTokenTxResponse) error {
+
+	log.Debug("Validating mint entry")
+
+	amount, err := strconv.ParseInt(tx.Data.Amount, 10, 64)
+	if err != nil {
+		return err
+	}
+
+	log.Debug("entry amount=", entry.Amount, ", tx amount=", amount)
+	if entry.Amount != amount {
+		return fmt.Errorf("entry amount=%d, tx amount=%d", entry.Amount, amount)
+	}
+
+	log.Debug("entry token=", entry.TokenURL, ", tx token=", tx.Data.Token)
+	// case insensitive comparison
+	if !strings.EqualFold(entry.TokenURL, tx.Data.Token) {
+		return fmt.Errorf("entry token=%s, tx token=%s", entry.TokenURL, tx.Data.Token)
+	}
+
+	log.Debug("entry destination=", entry.Destination, ", cause memo=", cause.Transaction.Header.Memo)
+	// case insensitive comparison
+	if !strings.EqualFold(entry.Destination, cause.Transaction.Header.Memo) {
+		return fmt.Errorf("entry destination=%s, cause memo=%s", entry.Destination, cause.Transaction.Header.Memo)
 	}
 
 	return nil
