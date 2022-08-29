@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/AccumulateNetwork/bridge/abiutil"
 	"github.com/AccumulateNetwork/bridge/accumulate"
@@ -187,6 +188,16 @@ func main() {
 						fmt.Printf("can not get gnosis safe tx with hash %s: ", safeTxHash)
 						return err
 					}
+
+					sort.Slice(gnosisTx.Confirmations, func(i, j int) bool {
+						switch strings.Compare(gnosisTx.Confirmations[i].Owner, gnosisTx.Confirmations[j].Owner) {
+						case -1:
+							return true
+						case 1:
+							return false
+						}
+						return gnosisTx.Confirmations[i].Owner > gnosisTx.Confirmations[j].Owner
+					})
 
 					// concatenate signatures
 					var sig []byte

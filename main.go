@@ -9,6 +9,8 @@ import (
 	"math/big"
 	"os/user"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/AccumulateNetwork/bridge/abiutil"
@@ -1114,6 +1116,17 @@ func submitEVMTxs(e *evm.EVMClient, g *gnosis.Gnosis, die chan bool) {
 							fmt.Println("[submit]", len(tx.Confirmations), "signatures,", safe.Threshold, "required")
 							break
 						}
+
+						// sort signatures
+						sort.Slice(tx.Confirmations, func(i, j int) bool {
+							switch strings.Compare(tx.Confirmations[i].Owner, tx.Confirmations[j].Owner) {
+							case -1:
+								return true
+							case 1:
+								return false
+							}
+							return tx.Confirmations[i].Owner > tx.Confirmations[j].Owner
+						})
 
 						// concatenate signatures
 						var sig []byte
