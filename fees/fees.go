@@ -13,13 +13,12 @@ const OP_RELEASE = "release"
 
 // Operation is a helper to apply fees
 type Operation struct {
-	Token *schema.Token `json:"token"`
-	In    int64         `json:"in" validate:"gt=0"`
-	Out   int64         `json:"out" validate:"gt=0"`
+	Token  *schema.Token `json:"token"`
+	Amount int64         `json:"amount" validate:"gt=0"`
 }
 
 // Mint applies minting fees to input and updates output amount
-func (o *Operation) ApplyFees(fees *schema.BridgeFees, operation string) (*Operation, error) {
+func (o *Operation) ApplyFees(fees *schema.BridgeFees, operation string) (int64, error) {
 
 	var err error
 
@@ -29,13 +28,13 @@ func (o *Operation) ApplyFees(fees *schema.BridgeFees, operation string) (*Opera
 	// validate fees
 	err = validate.Struct(fees)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	// validate token
 	err = validate.Struct(o.Token)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	var out float64
@@ -44,32 +43,32 @@ func (o *Operation) ApplyFees(fees *schema.BridgeFees, operation string) (*Opera
 
 	switch operation {
 	case OP_MINT:
-		out = float64(o.In) - o.Token.EVMMintTxCost*math.Pow10(int(o.Token.Precision))
+		out = float64(o.Amount) - o.Token.EVMMintTxCost*math.Pow10(int(o.Token.Precision))
 		ratio = getRatio(o.Token.Precision, o.Token.EVMDecimals)
 		feeBps = float64(fees.MintFee)
 	case OP_RELEASE:
-		out = float64(o.In)
+		out = float64(o.Amount)
 		ratio = getRatio(o.Token.EVMDecimals, o.Token.Precision)
 		feeBps = float64(fees.BurnFee)
 	default:
-		return nil, fmt.Errorf("invalid operation")
-	}
-
-	if out <= 0 {
-		return nil, fmt.Errorf("evm mint tx cost the same or higher than input amount")
+		return 0, fmt.Errorf("invalid operation")
 	}
 
 	// apply ratio and fees
 	// fees are in bps (100 bps = 1%, 10000 = 100%)
 	out *= ratio * (10000 - feeBps) / 10000
-	o.Out = int64(math.Floor(out))
 
 	err = validate.Struct(o)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return o, nil
+	res := int64(math.Floor(out))
+	if res <= 0 {
+		return 0, fmt.Errorf("output should be higher than 0")
+	}
+
+	return res, nil
 
 }
 
