@@ -11,8 +11,8 @@ import (
 
 // BridgeFees schema
 type BridgeFees struct {
-	MintFee int64 `json:"mintFee"`
-	BurnFee int64 `json:"burnFee"`
+	MintFee int64 `json:"mintFee" validate:"gte=0"`
+	BurnFee int64 `json:"burnFee" validate:"gte=0"`
 }
 
 // TokenEntry is token registry item schema
@@ -25,9 +25,9 @@ type TokenEntry struct {
 }
 
 type WrappedToken struct {
-	Address    string `json:"address" validate:"required,eth_addr"`
-	ChainID    int64  `json:"chainId" validate:"required,gt=0"`
-	MintTxCost int64  `json:"mintTxCost" validate:"gte=0"`
+	Address    string  `json:"address" validate:"required,eth_addr"`
+	ChainID    int64   `json:"chainId" validate:"required,gt=0"`
+	MintTxCost float64 `json:"mintTxCost" validate:"gte=0"`
 }
 
 // Tokens is the list of active tokens, used by API
@@ -38,13 +38,13 @@ type Tokens struct {
 
 // Token is an item of Tokens{}
 type Token struct {
-	URL           string `json:"url"`
-	Symbol        string `json:"symbol"`
-	Precision     int64  `json:"precision"`
-	EVMAddress    string `json:"evmAddress"`
-	EVMSymbol     string `json:"evmSymbol"`
-	EVMDecimals   int64  `json:"evmDecimals"`
-	EVMMintTxCost int64  `json:"evmMintTxCost"`
+	URL           string  `json:"url"`
+	Symbol        string  `json:"symbol"`
+	Precision     int64   `json:"precision"`
+	EVMAddress    string  `json:"evmAddress"`
+	EVMSymbol     string  `json:"evmSymbol"`
+	EVMDecimals   int64   `json:"evmDecimals"`
+	EVMMintTxCost float64 `json:"evmMintTxCost" validate:"gte=0"`
 }
 
 // BurnEvent is an event of token burns on the EVM side

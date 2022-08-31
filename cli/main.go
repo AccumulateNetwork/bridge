@@ -401,7 +401,7 @@ func main() {
 						token.Enabled = false
 					}
 
-					token.Wrapped = append(token.Wrapped, &schema.WrappedToken{Address: evmTokenContract, ChainID: int64(evmChainId), MintTxCost: int64(evmMintTxCost)})
+					token.Wrapped = append(token.Wrapped, &schema.WrappedToken{Address: evmTokenContract, ChainID: int64(evmChainId), MintTxCost: float64(evmMintTxCost)})
 
 					tokenBytes, err := json.Marshal(token)
 					if err != nil {
