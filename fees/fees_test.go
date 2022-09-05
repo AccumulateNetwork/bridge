@@ -41,28 +41,28 @@ func TestApplyFees(t *testing.T) {
 	op.Amount = 1000 * 1e8
 	out, err = op.ApplyFees(fees, OP_MINT)
 	assert.NoError(t, err)
-	// (1000 [in] - 50 [mint cost]) - 0.1% = 949.05
-	assert.Equal(t, out, int64(949.05*1e8))
+	// 1000 [in] - 0.1% - 50 [mint cost] = 949
+	assert.Equal(t, out, int64(949*1e8))
 
 	// TEST 5: float evm mint cost
 	op.Token.EVMMintTxCost = 0.5
 	out, err = op.ApplyFees(fees, OP_MINT)
 	assert.NoError(t, err)
-	// (1000 [in] - 0.5 [mint cost]) - 0.1% = 998.5005
-	assert.Equal(t, out, int64(998.5005*1e8))
+	// 1000 [in] - 0.1% - 0.5 [mint cost] = 998.5
+	assert.Equal(t, out, int64(998.5*1e8))
 
 	// TEST 6: rounding down
 	op.Token.EVMDecimals = 0
 	out, err = op.ApplyFees(fees, OP_MINT)
 	assert.NoError(t, err)
-	// (1000 [in] - 0.5 [mint cost]) - 0.1% = 998.5005 = 998 (rounding down)
+	// 1000 [in] - 0.1% - 0.5 [mint cost] = 998.5 = 998 (rounding down)
 	assert.Equal(t, out, int64(998))
 
 	// TEST 7: zero out
 	op.Amount = 51 * 1e8
 	op.Token.EVMMintTxCost = 50
-	out, err = op.ApplyFees(fees, OP_MINT)
-	// (51 [in] - 50 [mint cost]) - 0.1% = 0.999 = 0 (rounding down)
+	_, err = op.ApplyFees(fees, OP_MINT)
+	// 51 [in] - 0.1% - 50 [mint cost] = 0.949 = 0 (rounding down)
 	assert.Error(t, err)
 
 	// TEST 8: burn-release (zero fee)

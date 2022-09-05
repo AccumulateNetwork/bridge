@@ -37,19 +37,20 @@ func (o *Operation) ApplyFees(fees *schema.BridgeFees, operation string) (int64,
 		return 0, err
 	}
 
-	var out float64
+	out := float64(o.Amount)
 	var ratio float64
 	var feeBps float64
+	var extraFees float64
 
 	switch operation {
 	case OP_MINT:
-		out = float64(o.Amount) - o.Token.EVMMintTxCost*math.Pow10(int(o.Token.Precision))
 		ratio = getRatio(o.Token.Precision, o.Token.EVMDecimals)
 		feeBps = float64(fees.MintFee)
+		extraFees = o.Token.EVMMintTxCost * math.Pow10(int(o.Token.Precision))
 	case OP_RELEASE:
-		out = float64(o.Amount)
 		ratio = getRatio(o.Token.EVMDecimals, o.Token.Precision)
 		feeBps = float64(fees.BurnFee)
+		extraFees = 0
 	default:
 		return 0, fmt.Errorf("invalid operation")
 	}
@@ -57,6 +58,9 @@ func (o *Operation) ApplyFees(fees *schema.BridgeFees, operation string) (int64,
 	// apply ratio and fees
 	// fees are in bps (100 bps = 1%, 10000 = 100%)
 	out *= ratio * (10000 - feeBps) / 10000
+
+	// apply extra fees
+	out -= extraFees
 
 	err = validate.Struct(o)
 	if err != nil {
