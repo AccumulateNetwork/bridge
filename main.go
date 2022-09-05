@@ -826,8 +826,25 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 								mintEntry.TokenURL = token.URL
 								mintEntry.TxID = tx.TxID
 
+								operation := &fees.Operation{
+									Token:  token,
+									Amount: amount.Int64(),
+								}
+
+								outAmount, err := operation.ApplyFees(&global.BridgeFees, fees.OP_MINT)
+								// skip if output amount is invalid (too low or negative, e.g.)
+								if err != nil {
+									continue
+								}
+
+								// update amount
+								outAmountBigInt := new(big.Int)
+								outAmountBigInt.SetInt64(outAmount)
+
+								// outAmountHuman := float64(outAmount) / math.Pow10(int(token.Precision))
+
 								// generate mint tx data
-								data, err := abiutil.GenerateMintTxData(token.EVMAddress, cause.Transaction.Header.Memo, amount)
+								data, err := abiutil.GenerateMintTxData(token.EVMAddress, cause.Transaction.Header.Memo, outAmountBigInt)
 								if err != nil {
 									fmt.Println("[mint] can not generate mint tx:", err)
 									// if we are here, then something unexpected happened
@@ -837,7 +854,7 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 								}
 
 								// generate gnosis safe tx
-								contractHash, signature, err := g.SignMintTx(token.EVMAddress, cause.Transaction.Header.Memo, amount)
+								contractHash, signature, err := g.SignMintTx(token.EVMAddress, cause.Transaction.Header.Memo, outAmountBigInt)
 								if err != nil {
 									fmt.Println("[mint] can not sign mint tx:", err)
 									// if we are here, then something unexpected happened
@@ -980,7 +997,7 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 								continue
 							}
 
-							fmt.Println("[mint] Found new pending tx:", mintEntry.TxID, "- Minting", mintEntry.Amount, token.EVMSymbol, "to", mintEntry.Destination)
+							fmt.Println("[mint] Found new pending tx:", mintEntry.TxID)
 							fmt.Println("[mint] Checking corresponding Accumulate tx seq number:", mintEntry.SeqNumber)
 
 							// parse tx using seq number
@@ -1032,8 +1049,18 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 
 							fmt.Println("[mint] Generating and signing gnosis safe tx")
 
+							operation := &fees.Operation{
+								Token:  token,
+								Amount: mintEntry.Amount,
+							}
+
+							outAmount, err := operation.ApplyFees(&global.BridgeFees, fees.OP_MINT)
+							if err != nil {
+								continue
+							}
+
 							// generate mint tx data
-							amount := big.NewInt(mintEntry.Amount)
+							amount := big.NewInt(outAmount)
 							data, err := abiutil.GenerateMintTxData(token.EVMAddress, cause.Transaction.Header.Memo, amount)
 							if err != nil {
 								fmt.Println("[mint] can not generate mint tx:", err)
