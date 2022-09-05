@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"math"
 	"math/big"
 	"os/user"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 	"github.com/AccumulateNetwork/bridge/api"
 	"github.com/AccumulateNetwork/bridge/config"
 	"github.com/AccumulateNetwork/bridge/evm"
+	"github.com/AccumulateNetwork/bridge/fees"
 	"github.com/AccumulateNetwork/bridge/global"
 	"github.com/AccumulateNetwork/bridge/gnosis"
 	"github.com/AccumulateNetwork/bridge/schema"
@@ -487,10 +489,23 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 							continue
 						}
 
-						fmt.Println("[release] Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
+						operation := &fees.Operation{
+							Token:  token,
+							Amount: l.Amount.Int64(),
+						}
+
+						outAmount, err := operation.ApplyFees(&global.BridgeFees, fees.OP_RELEASE)
+						// skip if output amount is invalid (too low or negative, e.g.)
+						if err != nil {
+							continue
+						}
+
+						outAmountHuman := float64(outAmount) / math.Pow10(int(token.Precision))
+
+						fmt.Println("[release] Sending", outAmountHuman, token.Symbol, "to", burnEntry.Destination)
 
 						// generate accumulate token tx
-						txhash, err := a.SendTokens(burnEntry.Destination, burnEntry.Amount, token.URL, int64(e.ChainId))
+						txhash, err := a.SendTokens(burnEntry.Destination, outAmount, token.URL, int64(e.ChainId))
 						if err != nil {
 							fmt.Println("[release] tx failed:", err)
 							continue
@@ -590,7 +605,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 							continue
 						}
 
-						fmt.Println("[release] Found new pending tx:", burnEntry.TxHash, "- Sending", burnEntry.Amount, token.Symbol, "to", burnEntry.Destination)
+						fmt.Println("[release] Found new pending tx:", burnEntry.TxHash)
 						fmt.Println("[release] Checking corresponding EVM tx:", burnEntry.EVMTxID)
 
 						// parse evm tx

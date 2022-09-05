@@ -7,6 +7,7 @@ import (
 
 	"github.com/AccumulateNetwork/bridge/abiutil"
 	"github.com/AccumulateNetwork/bridge/accumulate"
+	"github.com/AccumulateNetwork/bridge/fees"
 	"github.com/AccumulateNetwork/bridge/global"
 	"github.com/AccumulateNetwork/bridge/schema"
 	"github.com/labstack/gommon/log"
@@ -74,6 +75,23 @@ func ValidateBurnEntry(entry *schema.BurnEvent, tx *abiutil.BurnData) error {
 
 func ValidateReleaseTx(releaseTx *accumulate.TokenTx, tx *abiutil.BurnData) error {
 
+	// find token
+	token := SearchEVMToken(tx.Token.String())
+
+	if token == nil {
+		return fmt.Errorf("token address %s is not supported by bridge", tx.Token.String())
+	}
+
+	operation := &fees.Operation{
+		Token:  token,
+		Amount: tx.Amount.Int64(),
+	}
+
+	outAmount, err := operation.ApplyFees(&global.BridgeFees, fees.OP_RELEASE)
+	if err != nil {
+		return err
+	}
+
 	if len(releaseTx.To) != 1 {
 		return fmt.Errorf("expected 1 receiver (tx.Data.To), received=%d", len(releaseTx.To))
 	}
@@ -83,9 +101,9 @@ func ValidateReleaseTx(releaseTx *accumulate.TokenTx, tx *abiutil.BurnData) erro
 		return err
 	}
 
-	log.Debug("release tx amount=", releaseTxAmount, ", tx amount=", tx.Amount)
-	if releaseTxAmount != tx.Amount.Int64() {
-		return fmt.Errorf("release tx amount=%d, tx amount=%d", releaseTxAmount, tx.Amount)
+	log.Debug("release tx amount=", releaseTxAmount, ", out tx amount=", outAmount)
+	if releaseTxAmount != outAmount {
+		return fmt.Errorf("release tx amount=%d, out tx amount=%d", releaseTxAmount, outAmount)
 	}
 
 	releaseTxTo, err := acmeurl.Parse(releaseTx.To[0].URL)
