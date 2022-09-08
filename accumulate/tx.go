@@ -123,10 +123,15 @@ func (c *AccumulateClient) buildEnvelope(from string, payload protocol.Transacti
 
 	keypage := protocol.AccountUrl(signerUrl.Authority, signerUrl.Path)
 
+	kpData, err := c.QueryKeyPage(&Params{URL: c.Signer})
+	if err != nil {
+		return nil, err
+	}
+
 	signer := new(signing.Builder)
 	signer.SetPrivateKey(c.PrivateKey)
 	signer.SetTimestampToNow()
-	signer.SetVersion(3)
+	signer.SetVersion(kpData.Data.Version)
 	signer.SetType(protocol.SignatureTypeED25519)
 	signer.SetUrl(keypage)
 

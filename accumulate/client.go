@@ -14,6 +14,21 @@ type ADI struct {
 	URL     string `json:"url" validate:"required"`
 }
 
+type KeyPage struct {
+	Type            string `json:"type" validate:"required,eq=keyPage"`
+	KeyBook         string `json:"keyBook" validate:"required"`
+	URL             string `json:"url" validate:"required"`
+	CreditBalance   int64  `json:"creditBalance"`
+	AcceptThreshold int64  `json:"acceptThreshold"`
+	Threshold       int64  `json:"threshold"`
+	Version         uint64 `json:"version"`
+	Keys            []*Key `json:"keys"`
+}
+
+type Key struct {
+	PublicKeyHash string `json:"publicKeyHash`
+}
+
 type Token struct {
 	Type      string `json:"type" validate:"required,eq=tokenIssuer"`
 	KeyBook   string `json:"keyBook" validate:"required"`
@@ -71,6 +86,10 @@ type QueryADIResponse struct {
 	Data *ADI `json:"data"`
 }
 
+type QueryKeyPageResponse struct {
+	Data *KeyPage `json:"data"`
+}
+
 type QueryTokenResponse struct {
 	Data *Token `json:"data"`
 }
@@ -108,11 +127,11 @@ type QueryTxHistoryResponse struct {
 }
 
 // QueryADI gets Token info
-func (c *AccumulateClient) QueryADI(token *Params) (*QueryADIResponse, error) {
+func (c *AccumulateClient) QueryADI(adi *Params) (*QueryADIResponse, error) {
 
 	adiResp := &QueryADIResponse{}
 
-	resp, err := c.Client.Call(context.Background(), "query", &token)
+	resp, err := c.Client.Call(context.Background(), "query", &adi)
 	if err != nil {
 		return nil, err
 	}
@@ -132,6 +151,34 @@ func (c *AccumulateClient) QueryADI(token *Params) (*QueryADIResponse, error) {
 	}
 
 	return adiResp, nil
+
+}
+
+// QueryKeyPage gets Key page info
+func (c *AccumulateClient) QueryKeyPage(page *Params) (*QueryKeyPageResponse, error) {
+
+	pageResp := &QueryKeyPageResponse{}
+
+	resp, err := c.Client.Call(context.Background(), "query", &page)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Error != nil {
+		return nil, resp.Error
+	}
+
+	err = resp.GetObject(pageResp)
+	if err != nil {
+		return nil, fmt.Errorf("can not unmarshal api response: %s", err)
+	}
+
+	err = c.Validate.Struct(pageResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return pageResp, nil
 
 }
 
