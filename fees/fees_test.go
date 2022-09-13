@@ -52,21 +52,27 @@ func TestApplyFees(t *testing.T) {
 	assert.Equal(t, out, int64(998.5*1e8))
 
 	// TEST 6: rounding down
-	op.Token.EVMDecimals = 0
+	token2 := &schema.Token{Precision: 1, EVMDecimals: 1, EVMMintTxCost: 0.5}
+	op.Token = token2
+	op.Amount = 5 * 10
+	fees.MintFee = 1
 	out, err = op.ApplyFees(fees, OP_MINT)
 	assert.NoError(t, err)
-	// 1000 [in] - 0.1% - 0.5 [mint cost] = 998.5 = 998 (rounding down)
-	assert.Equal(t, out, int64(998))
+	// 5 [in] - 0.01% - 0.5 [mint cost] = 4.4995 = 4.4 (rounding down)
+	assert.Equal(t, out, int64(4.4*10))
 
 	// TEST 7: zero out
-	op.Amount = 51 * 1e8
-	op.Token.EVMMintTxCost = 50
+	op.Amount = 51 * 10
+	fees.MintFee = 10
+	op.Token.EVMMintTxCost = 50.9
 	_, err = op.ApplyFees(fees, OP_MINT)
-	// 51 [in] - 0.1% - 50 [mint cost] = 0.949 = 0 (rounding down)
+	// 51 [in] - 0.1% - 50.9 [mint cost] = 0.0949 = 0 (rounding down)
 	assert.Error(t, err)
 
 	// TEST 8: burn-release (zero fee)
-	op.Token.EVMDecimals = 8
+	token3 := &schema.Token{Precision: 8, EVMDecimals: 8, EVMMintTxCost: 1}
+	op.Token = token3
+	op.Amount = 51 * 1e8
 	out, err = op.ApplyFees(fees, OP_RELEASE)
 	assert.NoError(t, err)
 	// 51 [in] = 51
