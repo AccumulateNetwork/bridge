@@ -26,7 +26,7 @@ type KeyPage struct {
 }
 
 type Key struct {
-	PublicKeyHash string `json:"publicKeyHash`
+	PublicKeyHash string `json:"publicKeyHash"`
 }
 
 type Token struct {
