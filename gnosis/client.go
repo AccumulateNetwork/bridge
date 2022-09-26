@@ -96,6 +96,10 @@ func (g *Gnosis) GetSafe() (*ResponseSafe, error) {
 		return nil, err
 	}
 
+	if safe.Nonce == 0 {
+		return nil, fmt.Errorf("received safe nonce 0")
+	}
+
 	return &safe, nil
 
 }
