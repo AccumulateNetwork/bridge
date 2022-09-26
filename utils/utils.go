@@ -10,6 +10,7 @@ import (
 	"github.com/AccumulateNetwork/bridge/fees"
 	"github.com/AccumulateNetwork/bridge/global"
 	"github.com/AccumulateNetwork/bridge/schema"
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/gommon/log"
 
 	acmeurl "github.com/AccumulateNetwork/bridge/url"
@@ -181,6 +182,13 @@ func ValidateMintEntry(entry *schema.DepositEvent, tx *accumulate.QueryTokenTxRe
 	// case insensitive comparison
 	if !strings.EqualFold(entry.Destination, cause.Transaction.Header.Memo) {
 		return fmt.Errorf("entry destination=%s, cause memo=%s", entry.Destination, cause.Transaction.Header.Memo)
+	}
+
+	// validate destination address
+	validate := validator.New()
+	err = validate.Var(entry.Destination, "required,eth_addr")
+	if err != nil {
+		return err
 	}
 
 	return nil

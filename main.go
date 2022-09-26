@@ -816,6 +816,15 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 									break
 								}
 
+								// validate destination address
+								validate := validator.New()
+								err = validate.Var(cause.Transaction.Header.Memo, "required,eth_addr")
+								// if validation failed, skip this tx
+								if err != nil {
+									fmt.Println("[mint] can not validate destination address:", err)
+									continue
+								}
+
 								// create mintEntry
 								mintEntry := &schema.DepositEvent{}
 								mintEntry.Amount = amount.Int64()
