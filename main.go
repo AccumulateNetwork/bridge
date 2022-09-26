@@ -1160,7 +1160,13 @@ func submitEVMTxs(e *evm.EVMClient, g *gnosis.Gnosis, die chan bool) {
 
 					for _, tx := range txs.Results {
 
-						fmt.Println("[submit] found safetxhash:", tx.SafeTxHash)
+						fmt.Println("[submit] found safetxhash:", tx.SafeTxHash, "nonce:", tx.Nonce)
+
+						// check if tx is executed
+						if tx.IsExecuted {
+							fmt.Println("[submit] tx is already executed")
+							break
+						}
 
 						// check number of signatures
 						if len(tx.Confirmations) < int(safe.Threshold) {

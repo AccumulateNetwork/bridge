@@ -189,6 +189,12 @@ func main() {
 						return err
 					}
 
+					// check if tx is executed
+					if gnosisTx.IsExecuted {
+						fmt.Printf("tx is already executed")
+						return fmt.Errorf("tx is already executed")
+					}
+
 					sort.Slice(gnosisTx.Confirmations, func(i, j int) bool {
 						switch strings.Compare(gnosisTx.Confirmations[i].Owner, gnosisTx.Confirmations[j].Owner) {
 						case -1:
