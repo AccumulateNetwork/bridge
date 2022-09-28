@@ -32,7 +32,7 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
-const LEADER_MIN_DURATION = 1
+const LEADER_MIN_DURATION = 2
 const NUMBER_OF_ACCUMULATE_TOKEN_TXS = 100
 const NUMBER_OF_TOKEN_REGISTRY_ENTRIES = 1000
 
