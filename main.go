@@ -1162,6 +1162,12 @@ func submitEVMTxs(e *evm.EVMClient, g *gnosis.Gnosis, die chan bool) {
 
 						fmt.Println("[submit] found safetxhash:", tx.SafeTxHash, "nonce:", tx.Nonce)
 
+						// check if tx has been already submitted to the evm network
+						if global.LeaderLatestSubmittedTx == tx.SafeTxHash {
+							fmt.Println("[submit] tx is already submitted")
+							break
+						}
+
 						// check if tx is executed
 						if tx.IsExecuted {
 							fmt.Println("[submit] tx is already executed")
@@ -1211,6 +1217,9 @@ func submitEVMTxs(e *evm.EVMClient, g *gnosis.Gnosis, die chan bool) {
 							fmt.Println("[submit] ethereum tx error:", err)
 							break
 						}
+
+						// update latest submitted tx to prevent duplicate submission
+						global.LeaderLatestSubmittedTx = tx.SafeTxHash
 
 						fmt.Println("[submit] tx sent:", sentTx.Hash().Hex())
 
