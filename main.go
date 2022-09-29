@@ -301,8 +301,15 @@ func parseToken(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gnosis.Gnos
 		return
 	}
 
-	// if entry is disabled, skip
+	// if entry is disabled, remove existing tokens / skip
 	if !tokenEntry.Enabled {
+		for i, t := range global.Tokens.Items {
+			if strings.EqualFold(t.URL, tokenEntry.URL) {
+				log.Info("remove disabled token ", tokenEntry.URL)
+				global.Tokens.Items = append(global.Tokens.Items[:i], global.Tokens.Items[i+1:]...)
+				return
+			}
+		}
 		log.Debug("token is disabled")
 		return
 	}
