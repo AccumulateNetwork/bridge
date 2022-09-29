@@ -96,7 +96,7 @@ func start(configFile string) {
 		fmt.Println("EVM API:", e.API)
 		fmt.Println("EVM ChainId:", e.ChainId)
 
-		// init gnosis client
+		// init accumulate client
 		if a, err = accumulate.NewAccumulateClient(conf); err != nil {
 			log.Fatal(err)
 		}
@@ -147,7 +147,7 @@ func start(configFile string) {
 
 		fmt.Println("Got", len(tokens.Items), "data entry(s)")
 		for _, item := range tokens.Items {
-			parseToken(a, e, item)
+			parseToken(a, e, g, item)
 		}
 
 		fmt.Println("Found", len(global.Tokens.Items), "token(s)")
@@ -264,7 +264,7 @@ func getStatus(a *accumulate.AccumulateClient, die chan bool) {
 }
 
 // parseToken parses data entry with token information received from data account
-func parseToken(a *accumulate.AccumulateClient, e *evm.EVMClient, entry *accumulate.DataEntry) {
+func parseToken(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gnosis.Gnosis, entry *accumulate.DataEntry) {
 
 	fmt.Println("Parsing", entry.EntryHash)
 
@@ -359,6 +359,11 @@ func parseToken(a *accumulate.AccumulateClient, e *evm.EVMClient, entry *accumul
 	evmT, err := e.GetERC20(token.EVMAddress)
 	if err != nil {
 		log.Debug("can not get token from ethereum api ", err)
+		return
+	}
+	if evmT.Owner != g.BridgeAddress {
+		log.Debug("token owner is not the bridge, but ", evmT.Owner)
+		return
 	}
 	token.EVMSymbol = evmT.Symbol
 	token.EVMDecimals = evmT.Decimals
