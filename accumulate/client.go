@@ -38,8 +38,8 @@ type Token struct {
 }
 
 type TokenAccount struct {
-	Type     string `json:"type" validate:"required,eq=tokenAccount"`
-	KeyBook  string `json:"keyBook" validate:"required"`
+	Type     string `json:"type" validate:"required,oneof=tokenAccount liteTokenAccount"`
+	KeyBook  string `json:"keyBook"`
 	URL      string `json:"url" validate:"required"`
 	TokenURL string `json:"tokenUrl" validate:"required"`
 	Balance  string `json:"balance" validate:"required"`
