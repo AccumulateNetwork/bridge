@@ -37,12 +37,7 @@ evm:
   maxpriorityfee: 2
 ```
 
-3. Change config owner
-```bash
-chown 1000:1000 ~/.accumulatebridge/config.yaml
-```
-
-4. Install using Docker (recommended)
+3. Install using Docker (recommended)
 ```bash
 docker run -d --name accumulatebridge -v ~/.accumulatebridge:/home/app/values registry.gitlab.com/accumulatenetwork/evm-bridge:main
 ```
