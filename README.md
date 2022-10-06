@@ -42,7 +42,7 @@ evm:
 chown 1000:1000 ~/.accumulatebridge/config.yaml
 ```
 
-3. Install using Docker (recommended)
+4. Install using Docker (recommended)
 ```bash
 docker run -d --name accumulatebridge -v ~/.accumulatebridge:/home/app/values registry.gitlab.com/accumulatenetwork/evm-bridge:main
 ```
