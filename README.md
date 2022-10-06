@@ -14,14 +14,14 @@ app:
 # Log Level (Debug 1, Info 2, Warn 3, Error 4)
   loglevel: 2
 acme:
-# Accumulate node, e.g. "https://testnet.accumulatenetwork.io"
+# Accumulate API endpoint, e.g. "https://testnet.accumulatenetwork.io/v2"
   node: ""
 # Bridge ADI, usually "bridge.acme"
   bridgeadi: ""
 # Accumulate ed25519 private key
   privatekey: ""
 evm:
-# EVM node (Infura/Quicknode, private node, etc.)
+# EVM API endpoint (Infura/Quicknode, private node, etc.)
   node: ""
 # EVM chainid (Ethereum mainnet 1, Goerli testnet 5, etc.)
   chainid: 1
