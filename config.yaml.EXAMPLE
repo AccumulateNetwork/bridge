@@ -1,0 +1,15 @@
+app:
+#  apiport: 8081
+#  loglevel: 2
+acme:
+#  node: ""
+#  bridgeadi: ""
+#  privatekey: ""
+evm:
+#  node: ""
+#  chainid: 1
+#  safeaddress: ""
+#  bridgeaddress: ""
+#  privatekey: ""
+#  maxgasfee: 30
+#  maxpriorityfee: 2
