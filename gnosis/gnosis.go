@@ -14,6 +14,7 @@ import (
 const (
 	GNOSIS_API_MAINNET = "https://safe-transaction.gnosis.io/api/v1/"
 	GNOSIS_API_RINKEBY = "https://safe-transaction.rinkeby.gnosis.io/api/v1/"
+	GNOSIS_API_GOERLI  = "https://safe-transaction.goerli.gnosis.io/api/v1/"
 	MINT_GAS_LIMIT     = 200000
 )
 
@@ -39,6 +40,8 @@ func NewGnosis(conf *config.Config) (*Gnosis, error) {
 		g.API = GNOSIS_API_MAINNET
 	case 4:
 		g.API = GNOSIS_API_RINKEBY
+	case 5:
+		g.API = GNOSIS_API_GOERLI
 	default:
 		return nil, fmt.Errorf("received unknown chainId from config: %s", strconv.Itoa(g.ChainId))
 
