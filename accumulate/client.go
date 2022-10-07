@@ -9,9 +9,13 @@ import (
 )
 
 type ADI struct {
-	Type    string `json:"type" validate:"required,eq=identity"`
-	KeyBook string `json:"keyBook" validate:"required"`
-	URL     string `json:"url" validate:"required"`
+	Type        string `json:"type" validate:"required,eq=identity"`
+	Authorities []*URL `json:"authorities" validate:"required"`
+	URL         string `json:"url" validate:"required"`
+}
+
+type URL struct {
+	URL string `json:"url" validate:"required"`
 }
 
 type KeyPage struct {
