@@ -8,14 +8,14 @@ import (
 	"gitlab.com/accumulatenetwork/accumulate/protocol"
 )
 
+type URL struct {
+	URL string `json:"url" validate:"required"`
+}
+
 type ADI struct {
 	Type        string `json:"type" validate:"required,eq=identity"`
 	Authorities []*URL `json:"authorities" validate:"required"`
 	URL         string `json:"url" validate:"required"`
-}
-
-type URL struct {
-	URL string `json:"url" validate:"required"`
 }
 
 type KeyPage struct {
@@ -34,19 +34,19 @@ type Key struct {
 }
 
 type Token struct {
-	Type      string `json:"type" validate:"required,eq=tokenIssuer"`
-	KeyBook   string `json:"keyBook" validate:"required"`
-	URL       string `json:"url" validate:"required"`
-	Symbol    string `json:"symbol" validate:"required"`
-	Precision int64  `json:"precision"`
+	Type        string `json:"type" validate:"required,eq=tokenIssuer"`
+	Authorities []*URL `json:"authorities" validate:"required"`
+	URL         string `json:"url" validate:"required"`
+	Symbol      string `json:"symbol" validate:"required"`
+	Precision   int64  `json:"precision"`
 }
 
 type TokenAccount struct {
-	Type     string `json:"type" validate:"required,oneof=tokenAccount liteTokenAccount"`
-	KeyBook  string `json:"keyBook"`
-	URL      string `json:"url" validate:"required"`
-	TokenURL string `json:"tokenUrl" validate:"required"`
-	Balance  string `json:"balance" validate:"required"`
+	Type        string `json:"type" validate:"required,oneof=tokenAccount liteTokenAccount"`
+	Authorities []*URL `json:"authorities" validate:"required"`
+	URL         string `json:"url" validate:"required"`
+	TokenURL    string `json:"tokenUrl" validate:"required"`
+	Balance     string `json:"balance" validate:"required"`
 }
 
 type TokenTx struct {
