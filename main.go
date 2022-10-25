@@ -1194,13 +1194,13 @@ func submitEVMTxs(e *evm.EVMClient, g *gnosis.Gnosis, die chan bool) {
 
 						// sort signatures
 						sort.Slice(tx.Confirmations, func(i, j int) bool {
-							switch strings.Compare(tx.Confirmations[i].Owner, tx.Confirmations[j].Owner) {
+							switch strings.Compare(strings.ToLower(tx.Confirmations[i].Owner), strings.ToLower(tx.Confirmations[j].Owner)) {
 							case -1:
 								return true
 							case 1:
 								return false
 							}
-							return tx.Confirmations[i].Owner > tx.Confirmations[j].Owner
+							return strings.ToLower(tx.Confirmations[i].Owner) > strings.ToLower(tx.Confirmations[j].Owner)
 						})
 
 						// concatenate signatures

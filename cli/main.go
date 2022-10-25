@@ -196,13 +196,13 @@ func main() {
 					}
 
 					sort.Slice(gnosisTx.Confirmations, func(i, j int) bool {
-						switch strings.Compare(gnosisTx.Confirmations[i].Owner, gnosisTx.Confirmations[j].Owner) {
+						switch strings.Compare(strings.ToLower(gnosisTx.Confirmations[i].Owner), strings.ToLower(gnosisTx.Confirmations[j].Owner)) {
 						case -1:
 							return true
 						case 1:
 							return false
 						}
-						return gnosisTx.Confirmations[i].Owner > gnosisTx.Confirmations[j].Owner
+						return strings.ToLower(gnosisTx.Confirmations[i].Owner) > strings.ToLower(gnosisTx.Confirmations[j].Owner)
 					})
 
 					// concatenate signatures
