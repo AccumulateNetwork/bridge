@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	ACC_KEYBOOK                 = "book"    // bridge ADI keybook
 	ACC_KEYPAGE                 = "1"       // bridge ADI keypage
 	ACC_LEADER                  = "leader"  // data account: current leader (pubkeyhash)
 	ACC_TOKEN_REGISTRY          = "tokens"  // data account: token registry (accumulate token address, evm token address, evm chainid)
@@ -72,7 +71,7 @@ func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 	}
 
 	c.ADI = conf.ACME.BridgeADI
-	c.Signer = filepath.Join(conf.ACME.BridgeADI, ACC_KEYBOOK, ACC_KEYPAGE)
+	c.Signer = filepath.Join(conf.ACME.BridgeADI, conf.ACME.KeyBook, ACC_KEYPAGE)
 
 	if conf.ACME.PrivateKey == "" {
 		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.ACME.PrivateKey)
