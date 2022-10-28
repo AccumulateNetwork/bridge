@@ -43,7 +43,7 @@ type Token struct {
 
 type TokenAccount struct {
 	Type        string `json:"type" validate:"required,oneof=tokenAccount liteTokenAccount"`
-	Authorities []*URL `json:"authorities" validate:"required"`
+	Authorities []*URL `json:"authorities"`
 	URL         string `json:"url" validate:"required"`
 	TokenURL    string `json:"tokenUrl" validate:"required"`
 	Balance     string `json:"balance" validate:"required"`
