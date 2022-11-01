@@ -55,7 +55,7 @@ func (c *AccumulateClient) SendTokens(to string, amount int64, tokenURL string, 
 }
 
 // RemoteTransaction generates remote tx for `execute-direct` API method
-func (c *AccumulateClient) RemoteTransaction(txhash string) (string, error) {
+func (c *AccumulateClient) RemoteTransaction(from string, txhash string) (string, error) {
 
 	// tx body
 	payload := new(protocol.RemoteTransaction)
@@ -65,7 +65,7 @@ func (c *AccumulateClient) RemoteTransaction(txhash string) (string, error) {
 	}
 	payload.Hash = *byte32(hash)
 
-	env, err := c.buildEnvelope(c.ADI, payload)
+	env, err := c.buildEnvelope(from, payload)
 	if err != nil {
 		return "", err
 	}
