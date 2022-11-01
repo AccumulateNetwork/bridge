@@ -664,7 +664,8 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 						}
 
 						// sign accumulate tx
-						txhash, err := a.RemoteTransaction(hex.EncodeToString(remoteTxHash[:]))
+						tokenAccount := accumulate.GenerateTokenAccount(a.ADI, int64(e.ChainId), token.Symbol)
+						txhash, err := a.RemoteTransaction(tokenAccount, hex.EncodeToString(remoteTxHash[:]))
 						if err != nil {
 							fmt.Println("[release] tx failed:", err)
 							continue
@@ -673,7 +674,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 						fmt.Println("[release] tx sent:", txhash)
 
 						// sign data entry
-						txhash, err = a.RemoteTransaction(entryhash)
+						txhash, err = a.RemoteTransaction(releaseQueue, entryhash)
 						if err != nil {
 							fmt.Println("[release] tx failed:", err)
 							continue
@@ -1121,7 +1122,7 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 							fmt.Println("[mint] gnosis safe tx signed: nonce", mintEntry.SafeTxNonce, "safeTxHash", mintEntry.SafeTxHash)
 
 							// sign data entry
-							txhash, err := a.RemoteTransaction(entryhash)
+							txhash, err := a.RemoteTransaction(mintQueue, entryhash)
 							if err != nil {
 								fmt.Println("[mint] tx failed:", err)
 								continue
