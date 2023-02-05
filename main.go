@@ -110,6 +110,13 @@ func start(configFile string) {
 		// set chainId for tokens
 		global.Tokens.ChainID = int64(conf.EVM.ChainId)
 
+		// parse bridge fees on node start
+		bridgeFeesDataAccount := filepath.Join(conf.ACME.BridgeADI, accumulate.ACC_BRIDGE_FEES)
+		if err = getBridgeFees(bridgeFeesDataAccount, a); err != nil {
+			// bridge can not start without fees
+			log.Fatal(err)
+		}
+
 		// parse token list from Accumulate
 		// only once – when node is started
 		// token list is mandatory, so return fatal error in case of error
@@ -134,9 +141,10 @@ func start(configFile string) {
 
 		// init interval go routines
 		die := make(chan bool)
-		// parse bridge fees
-		bridgeFeesDataAccount := filepath.Join(conf.ACME.BridgeADI, accumulate.ACC_BRIDGE_FEES)
-		go getBridgeFees(bridgeFeesDataAccount, a, die)
+
+		// refresh bridge fees every minute
+		go refreshBridgeFees(bridgeFeesDataAccount, a, die)
+
 		go getStatus(a, die)
 		go getLeader(a, die)
 		// go debugLeader(die)
@@ -152,31 +160,43 @@ func start(configFile string) {
 	}
 }
 
-func getBridgeFees(bridgeFeesDataAccount string, a *accumulate.AccumulateClient, die chan bool) {
+func getBridgeFees(bridgeFeesDataAccount string, a *accumulate.AccumulateClient) error {
+
+	fmt.Println("Getting bridge fees from", bridgeFeesDataAccount)
+	fees, err := a.QueryLatestDataEntry(&accumulate.Params{URL: bridgeFeesDataAccount})
+	if err != nil {
+		fmt.Println("unable to get bridge fees from", bridgeFeesDataAccount)
+		return err
+	}
+
+	feesBytes, err := hex.DecodeString(fees.Data.Entry.Data[0])
+	if err != nil {
+		log.Error("can not decode entry data")
+		return err
+	}
+
+	err = json.Unmarshal(feesBytes, &global.BridgeFees)
+	if err != nil {
+		log.Error("unable to unmarshal entry data")
+		return err
+	} else {
+		fmt.Printf("Mint fee: %.2f%%\n", float64(global.BridgeFees.MintFee)/100)
+		fmt.Printf("Burn fee: %.2f%%\n", float64(global.BridgeFees.BurnFee)/100)
+	}
+
+	return nil
+
+}
+
+// refreshBridgeFees parses bridge fees and updates them every minute
+func refreshBridgeFees(bridgeFeesDataAccount string, a *accumulate.AccumulateClient, die chan bool) {
 
 	for {
 		select {
 		default:
-			fmt.Println("Getting bridge fees from", bridgeFeesDataAccount)
-			fees, err := a.QueryLatestDataEntry(&accumulate.Params{URL: bridgeFeesDataAccount})
+			err := getBridgeFees(bridgeFeesDataAccount, a)
 			if err != nil {
-				fmt.Println("unable to get bridge fees from", bridgeFeesDataAccount)
-				log.Fatal(err)
-			}
-
-			feesBytes, err := hex.DecodeString(fees.Data.Entry.Data[0])
-			if err != nil {
-				log.Error("can not decode entry data")
-				log.Fatal(err)
-			}
-
-			err = json.Unmarshal(feesBytes, &global.BridgeFees)
-			if err != nil {
-				log.Error("unable to unmarshal entry data")
-				log.Fatal(err)
-			} else {
-				fmt.Printf("Mint fee: %.2f%%\n", float64(global.BridgeFees.MintFee)/100)
-				fmt.Printf("Burn fee: %.2f%%\n", float64(global.BridgeFees.BurnFee)/100)
+				log.Error("Unable to refresh bridge fees:", err)
 			}
 
 			// check fees every minute
