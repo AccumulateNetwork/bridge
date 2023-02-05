@@ -19,9 +19,11 @@ import (
 	"github.com/AccumulateNetwork/bridge/evm"
 	"github.com/AccumulateNetwork/bridge/gnosis"
 	"github.com/AccumulateNetwork/bridge/schema"
+	acmeurl "github.com/AccumulateNetwork/bridge/url"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/urfave/cli/v2" // imports as package "cli"
+	"github.com/urfave/cli/v2"
+	// imports as package "cli"
 )
 
 func main() {
@@ -328,7 +330,13 @@ func main() {
 						return err
 					}
 
-					txhash, err := a.RemoteTransaction(txid)
+					// parse accumulate txid
+					parsedTxId, err := acmeurl.ParseTxID(txid)
+					if err != nil {
+						fmt.Println(err)
+					}
+					remoteTxHash := parsedTxId.Hash()
+					txhash, err := a.RemoteTransaction(txid, hex.EncodeToString(remoteTxHash[:]))
 					if err != nil {
 						fmt.Print("tx failed: ")
 						return err
