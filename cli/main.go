@@ -21,7 +21,8 @@ import (
 	"github.com/AccumulateNetwork/bridge/schema"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/urfave/cli/v2" // imports as package "cli"
+	"github.com/urfave/cli/v2"
+	// imports as package "cli"
 )
 
 func main() {
@@ -328,7 +329,7 @@ func main() {
 						return err
 					}
 
-					txhash, err := a.RemoteTransaction(txid)
+					txhash, err := a.RemoteTransaction(conf.ACME.BridgeADI, txid)
 					if err != nil {
 						fmt.Print("tx failed: ")
 						return err
