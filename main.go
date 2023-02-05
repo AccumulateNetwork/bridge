@@ -117,6 +117,9 @@ func start(configFile string) {
 			log.Fatal(err)
 		}
 
+		fmt.Printf("Mint fee: %.2f%%\n", float64(global.BridgeFees.MintFee)/100)
+		fmt.Printf("Burn fee: %.2f%%\n", float64(global.BridgeFees.BurnFee)/100)
+
 		// parse token list from Accumulate
 		// only once – when node is started
 		// token list is mandatory, so return fatal error in case of error
@@ -179,9 +182,6 @@ func getBridgeFees(bridgeFeesDataAccount string, a *accumulate.AccumulateClient)
 	if err != nil {
 		log.Error("unable to unmarshal entry data")
 		return err
-	} else {
-		fmt.Printf("Mint fee: %.2f%%\n", float64(global.BridgeFees.MintFee)/100)
-		fmt.Printf("Burn fee: %.2f%%\n", float64(global.BridgeFees.BurnFee)/100)
 	}
 
 	return nil
