@@ -107,32 +107,8 @@ func start(configFile string) {
 		fmt.Println("Accumulate API:", a.API)
 		fmt.Println("Bridge ADI:", a.ADI)
 
-		// parse bridge fees
-		bridgeFeesDataAccount := filepath.Join(conf.ACME.BridgeADI, accumulate.ACC_BRIDGE_FEES)
-		fmt.Println("Getting bridge fees from", bridgeFeesDataAccount)
-		fees, err := a.QueryLatestDataEntry(&accumulate.Params{URL: bridgeFeesDataAccount})
-		if err != nil {
-			fmt.Println("unable to get bridge fees from", bridgeFeesDataAccount)
-			log.Fatal(err)
-		}
-
-		feesBytes, err := hex.DecodeString(fees.Data.Entry.Data[0])
-		if err != nil {
-			log.Error("can not decode entry data")
-			log.Fatal(err)
-		}
-
-		err = json.Unmarshal(feesBytes, &global.BridgeFees)
-		if err != nil {
-			log.Error("unable to unmarshal entry data")
-			log.Fatal(err)
-		}
-
 		// set chainId for tokens
 		global.Tokens.ChainID = int64(conf.EVM.ChainId)
-
-		fmt.Printf("Mint fee: %.2f%%\n", float64(global.BridgeFees.MintFee)/100)
-		fmt.Printf("Burn fee: %.2f%%\n", float64(global.BridgeFees.BurnFee)/100)
 
 		// parse token list from Accumulate
 		// only once – when node is started
@@ -158,6 +134,9 @@ func start(configFile string) {
 
 		// init interval go routines
 		die := make(chan bool)
+		// parse bridge fees
+		bridgeFeesDataAccount := filepath.Join(conf.ACME.BridgeADI, accumulate.ACC_BRIDGE_FEES)
+		go getBridgeFees(bridgeFeesDataAccount, a, die)
 		go getStatus(a, die)
 		go getLeader(a, die)
 		// go debugLeader(die)
@@ -171,7 +150,42 @@ func start(configFile string) {
 		log.Fatal(api.StartAPI(conf))
 
 	}
+}
 
+func getBridgeFees(bridgeFeesDataAccount string, a *accumulate.AccumulateClient, die chan bool) {
+
+	for {
+		select {
+		default:
+			fmt.Println("Getting bridge fees from", bridgeFeesDataAccount)
+			fees, err := a.QueryLatestDataEntry(&accumulate.Params{URL: bridgeFeesDataAccount})
+			if err != nil {
+				fmt.Println("unable to get bridge fees from", bridgeFeesDataAccount)
+				log.Fatal(err)
+			}
+
+			feesBytes, err := hex.DecodeString(fees.Data.Entry.Data[0])
+			if err != nil {
+				log.Error("can not decode entry data")
+				log.Fatal(err)
+			}
+
+			err = json.Unmarshal(feesBytes, &global.BridgeFees)
+			if err != nil {
+				log.Error("unable to unmarshal entry data")
+				log.Fatal(err)
+			} else {
+				fmt.Printf("Mint fee: %.2f%%\n", float64(global.BridgeFees.MintFee)/100)
+				fmt.Printf("Burn fee: %.2f%%\n", float64(global.BridgeFees.BurnFee)/100)
+			}
+
+			// check fees every minute
+			time.Sleep(time.Duration(1) * time.Minute)
+		case <-die:
+			return
+		}
+
+	}
 }
 
 // getLeader parses current leader's public key hash from Accumulate data account and compares it with Accumulate key in the config to find out if this node is a leader or not
