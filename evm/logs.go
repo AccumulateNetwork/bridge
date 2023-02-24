@@ -11,6 +11,11 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
+type BlockRange struct {
+	From int64
+	To   int64
+}
+
 type EventLog struct {
 	TxID        common.Hash
 	BlockHeight uint64
@@ -21,7 +26,7 @@ type EventLog struct {
 }
 
 // ParseEventLog parses event logs from Ethereum
-func (e *EVMClient) ParseBridgeLogs(eventName string, bridgeAddress string, from int64) ([]*EventLog, error) {
+func (e *EVMClient) ParseBridgeLogs(eventName string, bridgeAddress string, blocks *BlockRange) ([]*EventLog, error) {
 
 	events := []*EventLog{}
 
@@ -40,13 +45,20 @@ func (e *EVMClient) ParseBridgeLogs(eventName string, bridgeAddress string, from
 	address := common.HexToAddress(bridgeAddress)
 
 	query := ethereum.FilterQuery{
-		FromBlock: big.NewInt(from),
 		Addresses: []common.Address{
 			address,
 		},
 		Topics: [][]common.Hash{
 			commonHash,
 		},
+	}
+
+	if blocks.From > 0 {
+		query.FromBlock = big.NewInt(blocks.From)
+	}
+
+	if blocks.To > 0 {
+		query.ToBlock = big.NewInt(blocks.To)
 	}
 
 	logs, err := e.Client.FilterLogs(context.Background(), query)

@@ -493,7 +493,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 					start := burnEntry.BlockHeight + 1
 
 					fmt.Println("[release] Parsing new EVM events for", bridge, "starting from blockHeight", start)
-					logs, err := e.ParseBridgeLogs("Burn", bridge, start)
+					logs, err := e.ParseBridgeLogs("Burn", bridge, &evm.BlockRange{From: start})
 					if err != nil {
 						fmt.Println("[release]", err)
 						break
@@ -652,23 +652,29 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 						}
 
 						fmt.Println("[release] Found new pending tx:", burnEntry.TxHash)
-						fmt.Println("[release] Checking corresponding EVM tx:", burnEntry.EVMTxID)
 
-						// parse evm tx
-						evmTx, err := e.GetTx(burnEntry.EVMTxID)
+						// Checking EVM tx limits the bridge to validate only txs of Accumulate Bridge smart contracts
+						// Valid burn txs, created by other contracts, calling Accumulate Bridge contract, are invalidated in this case
+						// It's safe to just validate Accumulate Bridge smart contract burn events
+
+						fmt.Println("[release] Parsing EVM events for", bridge, "at blockHeight", burnEntry.BlockHeight)
+						logs, err := e.ParseBridgeLogs("Burn", bridge, &evm.BlockRange{From: burnEntry.BlockHeight, To: burnEntry.BlockHeight})
 						if err != nil {
-							fmt.Println(err)
-							continue
+							fmt.Println("[release]", err)
+							break
 						}
 
-						burnData, err := abiutil.UnpackBurnTxInputData(evmTx.Data)
-						if err != nil {
-							fmt.Println("[release] unable to read burn tx:", err)
-							continue
+						foundLog := &evm.EventLog{}
+
+						// find only one log, associated with txid
+						for _, l := range logs {
+							if l.TxID.String() == burnEntry.EVMTxID {
+								foundLog = l
+							}
 						}
 
-						// validate burn entry against evm tx
-						err = utils.ValidateBurnEntry(burnEntry, burnData)
+						// validate burn entry against evm log
+						err = utils.ValidateBurnEntry(burnEntry, foundLog)
 						if err != nil {
 							fmt.Println("[release] burn entry validation failed:", err)
 							continue
@@ -691,7 +697,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 						}
 
 						// validate accumulate tx against evm tx
-						err = utils.ValidateReleaseTx(tx.Data, burnData)
+						err = utils.ValidateReleaseTx(tx.Data, foundLog)
 						if err != nil {
 							fmt.Println("[release] accumulate tx validation failed:", err)
 							continue
