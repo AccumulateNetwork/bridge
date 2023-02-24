@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/AccumulateNetwork/bridge/abiutil"
 	"github.com/AccumulateNetwork/bridge/accumulate"
+	"github.com/AccumulateNetwork/bridge/evm"
 	"github.com/AccumulateNetwork/bridge/fees"
 	"github.com/AccumulateNetwork/bridge/global"
 	"github.com/AccumulateNetwork/bridge/schema"
@@ -40,13 +40,13 @@ func SearchAccumulateToken(url string) *schema.Token {
 
 }
 
-func ValidateBurnEntry(entry *schema.BurnEvent, tx *abiutil.BurnData) error {
+func ValidateBurnEntry(entry *schema.BurnEvent, l *evm.EventLog) error {
 
 	log.Debug("Validating burn entry")
 
-	log.Debug("entry amount=", entry.Amount, ", tx amount=", tx.Amount)
-	if entry.Amount != tx.Amount.Int64() {
-		return fmt.Errorf("entry amount=%d, tx amount=%d", entry.Amount, tx.Amount)
+	log.Debug("entry amount=", entry.Amount, ", event log amount=", l.Amount)
+	if entry.Amount != l.Amount.Int64() {
+		return fmt.Errorf("entry amount=%d, event log amount=%d", entry.Amount, l.Amount)
 	}
 
 	entryDestination, err := acmeurl.Parse(entry.Destination)
@@ -54,38 +54,38 @@ func ValidateBurnEntry(entry *schema.BurnEvent, tx *abiutil.BurnData) error {
 		return err
 	}
 
-	txDestination, err := acmeurl.Parse(tx.Destination)
+	logDestination, err := acmeurl.Parse(l.Destination)
 	if err != nil {
 		return err
 	}
 
-	log.Debug("entry destination=", entryDestination, ", tx destination=", txDestination)
-	if entryDestination.Authority != txDestination.Authority || entryDestination.Path != txDestination.Path {
-		return fmt.Errorf("entry destination=%s, tx destination=%s", entry.Destination, tx.Destination)
+	log.Debug("entry destination=", entryDestination, ", event log destination=", logDestination)
+	if entryDestination.Authority != logDestination.Authority || entryDestination.Path != logDestination.Path {
+		return fmt.Errorf("entry destination=%s, event log destination=%s", entry.Destination, l.Destination)
 	}
 
-	log.Debug("entry token=", entry.TokenAddress, ", tx token=", tx.Token.Hex())
+	log.Debug("entry token=", entry.TokenAddress, ", event log token=", l.Token.Hex())
 	// case insensitive comparison
-	if !strings.EqualFold(entry.TokenAddress, tx.Token.Hex()) {
-		return fmt.Errorf("entry token=%s, tx token=%s", entry.TokenAddress, tx.Token.Hex())
+	if !strings.EqualFold(entry.TokenAddress, l.Token.Hex()) {
+		return fmt.Errorf("entry token=%s, event log token=%s", entry.TokenAddress, l.Token.Hex())
 	}
 
 	return nil
 
 }
 
-func ValidateReleaseTx(releaseTx *accumulate.TokenTx, tx *abiutil.BurnData) error {
+func ValidateReleaseTx(releaseTx *accumulate.TokenTx, l *evm.EventLog) error {
 
 	// find token
-	token := SearchEVMToken(tx.Token.String())
+	token := SearchEVMToken(l.Token.String())
 
 	if token == nil {
-		return fmt.Errorf("token address %s is not supported by bridge", tx.Token.String())
+		return fmt.Errorf("token address %s is not supported by bridge", l.Token.String())
 	}
 
 	operation := &fees.Operation{
 		Token:  token,
-		Amount: tx.Amount.Int64(),
+		Amount: l.Amount.Int64(),
 	}
 
 	outAmount, err := operation.ApplyFees(&global.BridgeFees, fees.OP_RELEASE)
@@ -102,9 +102,9 @@ func ValidateReleaseTx(releaseTx *accumulate.TokenTx, tx *abiutil.BurnData) erro
 		return err
 	}
 
-	log.Debug("release tx amount=", releaseTxAmount, ", out tx amount=", outAmount)
+	log.Debug("release tx amount=", releaseTxAmount, ", event log tx amount=", outAmount)
 	if releaseTxAmount != outAmount {
-		return fmt.Errorf("release tx amount=%d, out tx amount=%d", releaseTxAmount, outAmount)
+		return fmt.Errorf("release tx amount=%d, event log tx amount=%d", releaseTxAmount, outAmount)
 	}
 
 	releaseTxTo, err := acmeurl.Parse(releaseTx.To[0].URL)
@@ -112,14 +112,14 @@ func ValidateReleaseTx(releaseTx *accumulate.TokenTx, tx *abiutil.BurnData) erro
 		return err
 	}
 
-	txDestination, err := acmeurl.Parse(tx.Destination)
+	txDestination, err := acmeurl.Parse(l.Destination)
 	if err != nil {
 		return err
 	}
 
-	log.Debug("release tx destination=", releaseTx.To[0].URL, ", tx destination=", tx.Destination)
+	log.Debug("release tx destination=", releaseTx.To[0].URL, ", event log tx destination=", l.Destination)
 	if releaseTxTo.Authority != txDestination.Authority || releaseTxTo.Path != txDestination.Path {
-		return fmt.Errorf("entry destination=%s, tx destination=%s", releaseTx.To[0].URL, tx.Destination)
+		return fmt.Errorf("entry destination=%s, event log tx destination=%s", releaseTx.To[0].URL, l.Destination)
 	}
 
 	return nil
