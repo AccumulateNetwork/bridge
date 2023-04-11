@@ -5,22 +5,25 @@ go 1.18
 replace gitlab.com/accumulatenetwork/accumulate/internal/url => ./url
 
 require (
-	github.com/ethereum/go-ethereum v1.10.19
+	github.com/ethereum/go-ethereum v1.10.25
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/jinzhu/configor v1.2.1
 	github.com/labstack/gommon v0.3.1
 	github.com/mcuadros/go-defaults v1.2.0
 	github.com/stretchr/testify v1.8.0
-	github.com/urfave/cli/v2 v2.8.1
+	github.com/urfave/cli/v2 v2.10.2
 )
 
 require (
 	github.com/btcsuite/btcd v0.22.1 // indirect
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce // indirect
+	github.com/go-kit/log v0.2.1 // indirect
+	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/kardianos/service v1.2.0 // indirect
-	github.com/onsi/gomega v1.19.0 // indirect
-	github.com/rs/zerolog v1.26.1 // indirect
-	github.com/tendermint/tendermint v0.36.0-dev.0.20220415213734-226bc94c5fc9 // indirect
+	github.com/onsi/gomega v1.20.0 // indirect
+	github.com/rogpeppe/go-internal v1.8.1 // indirect
+	github.com/rs/zerolog v1.27.0 // indirect
+	github.com/tendermint/tendermint v0.37.0-rc1 // indirect
 )
 
 require (
@@ -28,11 +31,11 @@ require (
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/leodido/go-urn v1.2.1 // indirect
-	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29 // indirect
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 )
 
 require (
-	github.com/BurntSushi/toml v1.1.0 // indirect
+	github.com/BurntSushi/toml v1.2.0 // indirect
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
 	github.com/VictoriaMetrics/fastcache v1.6.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.2.0 // indirect
@@ -55,8 +58,8 @@ require (
 	github.com/huin/goupnp v1.0.3 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/karalabe/usb v0.0.2 // indirect
-	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/peterh/liner v1.1.1-0.20190123174540-a2c9a5303de7 // indirect
@@ -75,12 +78,12 @@ require (
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	github.com/ybbus/jsonrpc/v3 v3.1.0
-	gitlab.com/accumulatenetwork/accumulate v0.6.1-0.20220716034207-16f226efefd4
+	gitlab.com/accumulatenetwork/accumulate v1.0.4-0.20230404181844-a5bb3696f9db
 	go.neonxp.dev/jsonrpc2 v1.1.1
-	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
-	golang.org/x/sys v0.0.0-20220702020025-31831981b65f // indirect
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
+	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

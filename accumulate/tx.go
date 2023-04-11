@@ -85,7 +85,7 @@ func (c *AccumulateClient) RemoteTransaction(from string, txhash string) (string
 func (c *AccumulateClient) WriteData(dataAccount string, content [][]byte) (string, error) {
 
 	// tx body
-	entry := new(protocol.AccumulateDataEntry)
+	entry := new(protocol.DoubleHashDataEntry)
 	entry.Data = content
 
 	payload := new(protocol.WriteData)
