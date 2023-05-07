@@ -451,7 +451,7 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 		select {
 		default:
 
-			time.Sleep(time.Duration(30) * time.Second)
+			time.Sleep(time.Duration(60) * time.Second)
 
 			releaseQueue := accumulate.GenerateReleaseDataAccount(a.ADI, int64(e.ChainId), accumulate.ACC_RELEASE_QUEUE)
 
@@ -743,7 +743,7 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 		select {
 		default:
 
-			time.Sleep(time.Duration(30) * time.Second)
+			time.Sleep(time.Duration(60) * time.Second)
 
 			if global.IsOnline {
 
@@ -1192,7 +1192,7 @@ func submitEVMTxs(e *evm.EVMClient, g *gnosis.Gnosis, die chan bool) {
 		select {
 		default:
 
-			time.Sleep(time.Duration(30) * time.Second)
+			time.Sleep(time.Duration(60) * time.Second)
 
 			if global.IsOnline {
 

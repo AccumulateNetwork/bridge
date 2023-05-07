@@ -351,15 +351,13 @@ func main() {
 				},
 				Action: func(c *cli.Context) error {
 
-					if c.NArg() != 4 {
+					if c.NArg() < 2 {
 						printTokenRegisterHelp()
 						return nil
 					}
 
 					accumulateURL := c.Args().Get(0)
-					evmChainIdString := c.Args().Get(1)
-					evmTokenContract := c.Args().Get(2)
-					evmMintTxCostString := c.Args().Get(3)
+					wrapped := c.Args().Slice()
 
 					var conf *config.Config
 					var err error
@@ -386,18 +384,6 @@ func main() {
 						return err
 					}
 
-					evmChainId, err := strconv.Atoi(evmChainIdString)
-					if err != nil {
-						fmt.Print("chainId must be a number")
-						return err
-					}
-
-					evmMintTxCost, err := strconv.Atoi(evmMintTxCostString)
-					if err != nil {
-						fmt.Print("mintTxCost must be a number")
-						return err
-					}
-
 					token := &schema.TokenEntry{}
 					token.URL = accumulateURL
 					token.Enabled = true
@@ -408,7 +394,30 @@ func main() {
 						token.Enabled = false
 					}
 
-					token.Wrapped = append(token.Wrapped, &schema.WrappedToken{Address: evmTokenContract, ChainID: int64(evmChainId), MintTxCost: float64(evmMintTxCost)})
+					for i := 1; i <= len(wrapped)-1; i++ {
+
+						wrappedToken := &schema.WrappedToken{}
+
+						err := json.Unmarshal([]byte(wrapped[i]), &wrappedToken)
+
+						if err != nil {
+							fmt.Println(err)
+							return err
+						}
+
+						if wrappedToken.ChainID == 0 {
+							fmt.Print("chainId must be a number")
+							return err
+						}
+
+						if wrappedToken.MintTxCost == 0 {
+							fmt.Print("mintTxCost must be a number")
+							return err
+						}
+
+						token.Wrapped = append(token.Wrapped, wrappedToken)
+
+					}
 
 					tokenBytes, err := json.Marshal(token)
 					if err != nil {
@@ -846,7 +855,7 @@ func printAccSignHelp() {
 }
 
 func printTokenRegisterHelp() {
-	fmt.Println("token-register [accumulate token URL] [evm chain id] [evm token contract address] [evm mint tx cost] [--disable (optional)]")
+	fmt.Println("token-register [accumulate token URL] '{\"address\":\"\",\"chainId\":\"\",\"mintTxCost\":\"\"}'... [--disable (optional)]")
 }
 
 func printUpdateFeesHelp() {

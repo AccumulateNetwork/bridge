@@ -11,14 +11,14 @@ func GenerateTokenAccount(adi string, chainId int64, symbol string) string {
 	return filepath.Join(adi, strconv.Itoa(int(chainId))+"-"+symbol)
 }
 
-// Generate bridge data account in format {chainId}:{action}
+// Generate bridge data account in format audit:{chainId}:{action}
 func GenerateReleaseDataAccount(adi string, chainId int64, action string) string {
-	return filepath.Join(adi, strconv.Itoa(int(chainId))+":"+action)
+	return filepath.Join(adi, "audit:"+strconv.Itoa(int(chainId))+":"+action)
 }
 
-// Generate bridge data account in format {chainId}:{action}:{symbol}
+// Generate bridge data account in format audit:{chainId}:{action}:{symbol}
 func GenerateMintDataAccount(adi string, chainId int64, action string, symbol string) string {
-	return filepath.Join(adi, strconv.Itoa(int(chainId))+":"+action+":"+symbol)
+	return filepath.Join(adi, "audit:"+strconv.Itoa(int(chainId))+":"+action+":"+symbol)
 }
 
 // Generate pending chain in format {account}#pending
