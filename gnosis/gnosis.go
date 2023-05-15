@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	GNOSIS_API_MAINNET = "https://safe-transaction.gnosis.io/api/v1/"
-	GNOSIS_API_RINKEBY = "https://safe-transaction.rinkeby.gnosis.io/api/v1/"
-	GNOSIS_API_GOERLI  = "https://safe-transaction.goerli.gnosis.io/api/v1/"
-	MINT_GAS_LIMIT     = 200000
+	GNOSIS_API_MAINNET  = "https://safe-transaction-mainnet.safe.global/api/v1/"
+	GNOSIS_API_GOERLI   = "https://safe-transaction-goerli.safe.global/api/v1/"
+	GNOSIS_API_ARBITRUM = "https://safe-transaction-arbitrum.safe.global/api/v1/"
+	MINT_GAS_LIMIT      = 200000
 )
 
 type Gnosis struct {
@@ -38,10 +38,10 @@ func NewGnosis(conf *config.Config) (*Gnosis, error) {
 
 	case 1:
 		g.API = GNOSIS_API_MAINNET
-	case 4:
-		g.API = GNOSIS_API_RINKEBY
 	case 5:
 		g.API = GNOSIS_API_GOERLI
+	case 42161:
+		g.API = GNOSIS_API_ARBITRUM
 	default:
 		return nil, fmt.Errorf("received unknown chainId from config: %s", strconv.Itoa(g.ChainId))
 
