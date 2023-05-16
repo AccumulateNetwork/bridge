@@ -15,7 +15,6 @@ const (
 	GNOSIS_API_MAINNET  = "https://safe-transaction-mainnet.safe.global/api/v1/"
 	GNOSIS_API_GOERLI   = "https://safe-transaction-goerli.safe.global/api/v1/"
 	GNOSIS_API_ARBITRUM = "https://safe-transaction-arbitrum.safe.global/api/v1/"
-	MINT_GAS_LIMIT      = 200000
 )
 
 type Gnosis struct {

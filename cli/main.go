@@ -227,7 +227,7 @@ func main() {
 					to := common.HexToAddress(g.SafeAddress)
 
 					// submit ethereum tx
-					sentTx, err := cl.SubmitEIP1559Tx(gnosis.MINT_GAS_LIMIT, gasPrice, priorityFee, &to, 0, txData)
+					sentTx, err := cl.SubmitEIP1559Tx(gasPrice, priorityFee, &to, 0, txData)
 					if err != nil {
 						return err
 					}

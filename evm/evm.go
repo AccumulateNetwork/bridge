@@ -4,11 +4,18 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"fmt"
+	"strconv"
 
 	"github.com/AccumulateNetwork/bridge/config"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+)
+
+const (
+	GAS_LIMIT_MAINNET  = 200000
+	GAS_LIMIT_GOERLI   = 200000
+	GAS_LIMIT_ARBITRUM = 5000000
 )
 
 type EVMClient struct {
@@ -19,6 +26,7 @@ type EVMClient struct {
 	Client         *ethclient.Client
 	MaxGasFee      float64
 	MaxPriorityFee float64
+	GasLimit       int64
 }
 
 // NewEVMClient constructs the EVM client
@@ -50,6 +58,19 @@ func NewEVMClient(conf *config.Config) (*EVMClient, error) {
 
 	c.Client = client
 	c.ChainId = int(chainId.Int64())
+
+	switch c.ChainId {
+
+	case 1:
+		c.GasLimit = GAS_LIMIT_MAINNET
+	case 5:
+		c.GasLimit = GAS_LIMIT_GOERLI
+	case 42161:
+		c.GasLimit = GAS_LIMIT_ARBITRUM
+	default:
+		return nil, fmt.Errorf("received unknown chainId from config: %s", strconv.Itoa(c.ChainId))
+
+	}
 
 	if conf.EVM.PrivateKey == "" {
 		return nil, fmt.Errorf("received empty privateKey from config: %s", conf.EVM.PrivateKey)
