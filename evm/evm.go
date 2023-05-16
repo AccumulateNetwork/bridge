@@ -17,8 +17,8 @@ type EVMClient struct {
 	PrivateKey     *ecdsa.PrivateKey
 	PublicKey      common.Address
 	Client         *ethclient.Client
-	MaxGasFee      int64
-	MaxPriorityFee int64
+	MaxGasFee      float64
+	MaxPriorityFee float64
 }
 
 // NewEVMClient constructs the EVM client

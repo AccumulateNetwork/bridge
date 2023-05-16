@@ -9,17 +9,17 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (e *EVMClient) SubmitEIP1559Tx(gasLimit int64, gasPrice int64, priorityFee int64, to *common.Address, value int64, data []byte) (*types.Transaction, error) {
+func (e *EVMClient) SubmitEIP1559Tx(gasLimit int64, gasPrice float64, priorityFee float64, to *common.Address, value int64, data []byte) (*types.Transaction, error) {
 
 	// convert to big.Int
 	chainId := &big.Int{}
 	chainId.SetInt64(int64(e.ChainId))
 
 	gasFeeCap := &big.Int{}
-	gasFeeCap.SetInt64(gasPrice * 1e9)
+	gasFeeCap.SetInt64(int64(gasPrice * 1e9))
 
 	gasTipCap := &big.Int{}
-	gasTipCap.SetInt64(priorityFee * 1e9)
+	gasTipCap.SetInt64(int64(priorityFee * 1e9))
 
 	txValue := &big.Int{}
 	txValue.SetInt64(value)
