@@ -12,8 +12,8 @@ import (
 func TestGetSafe(t *testing.T) {
 
 	g := &Gnosis{}
-	g.API = GNOSIS_API_RINKEBY
-	g.SafeAddress = "0x5Ca3ad054405Cbe88b0907131cF021f8d24A6291"
+	g.API = GNOSIS_API_GOERLI
+	g.SafeAddress = "0x24BbA5D6fD7fC2Cbc293FDa6721c9BE6756D177a"
 
 	resp, err := g.GetSafe()
 	assert.NoError(t, err)
@@ -25,9 +25,9 @@ func TestCreateSafeMultisigTx(t *testing.T) {
 
 	// init gnosis safe
 	g := &Gnosis{}
-	g.API = GNOSIS_API_RINKEBY
-	g.SafeAddress = "0x5Ca3ad054405Cbe88b0907131cF021f8d24A6291"
-	g.BridgeAddress = "0xf2C0E57e40B85e6e016b3E04cC3268741740268e"
+	g.API = GNOSIS_API_GOERLI
+	g.SafeAddress = "0x24BbA5D6fD7fC2Cbc293FDa6721c9BE6756D177a"
+	g.BridgeAddress = "0x903f0dA0697FC1c81ecACc83b2A7445F392399e8"
 	g.ImportPrivateKey("08108aadbbe82e9ffa1eba54158e7aacbec6115156242558ae7e594037220e4a")
 
 	// get nonce

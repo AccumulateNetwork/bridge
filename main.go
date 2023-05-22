@@ -1265,7 +1265,7 @@ func submitEVMTxs(e *evm.EVMClient, g *gnosis.Gnosis, die chan bool) {
 						to := common.HexToAddress(g.SafeAddress)
 
 						// submit ethereum tx
-						sentTx, err := e.SubmitEIP1559Tx(gnosis.MINT_GAS_LIMIT, e.MaxGasFee, e.MaxPriorityFee, &to, 0, txData)
+						sentTx, err := e.SubmitEIP1559Tx(e.MaxGasFee, e.MaxPriorityFee, &to, 0, txData)
 						if err != nil {
 							fmt.Println("[submit] ethereum tx error:", err)
 							break

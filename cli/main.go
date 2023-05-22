@@ -162,14 +162,14 @@ func main() {
 
 					// parse optional args
 					if c.Args().Get(1) != "" {
-						gasPrice, err = strconv.ParseInt(c.Args().Get(1), 10, 64)
+						gasPrice, err = strconv.ParseFloat(c.Args().Get(1), 64)
 						if err != nil {
 							fmt.Print("incorrect gas price: ")
 							return err
 						}
 					}
 					if c.Args().Get(2) != "" {
-						priorityFee, err = strconv.ParseInt(c.Args().Get(2), 10, 64)
+						priorityFee, err = strconv.ParseFloat(c.Args().Get(2), 64)
 						if err != nil {
 							fmt.Print("incorrect priority fee: ")
 							return err
@@ -227,7 +227,7 @@ func main() {
 					to := common.HexToAddress(g.SafeAddress)
 
 					// submit ethereum tx
-					sentTx, err := cl.SubmitEIP1559Tx(gnosis.MINT_GAS_LIMIT, gasPrice, priorityFee, &to, 0, txData)
+					sentTx, err := cl.SubmitEIP1559Tx(gasPrice, priorityFee, &to, 0, txData)
 					if err != nil {
 						return err
 					}
