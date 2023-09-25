@@ -2,6 +2,7 @@ package accumulate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/labstack/gommon/log"
@@ -81,9 +82,11 @@ type Params struct {
 }
 
 type ExecuteDirectResponse struct {
-	Hash    string `json:"hash"`
-	Txid    string `json:"txid"`
-	Message string `json:"message"`
+	Hash            string   `json:"hash"`
+	Txid            string   `json:"txid"`
+	Message         string   `json:"message"`
+	SignatureHashes []string `json:"signatureHashes"`
+	SimpleHash      string   `json:"simpleHash"`
 }
 
 type QueryADIResponse struct {
@@ -431,8 +434,8 @@ func (c *AccumulateClient) ExecuteDirect(params *Params) (*ExecuteDirectResponse
 	}
 
 	// debug
-	// p, _ := json.Marshal(resp)
-	// fmt.Println(string(p))
+	p, _ := json.Marshal(resp)
+	fmt.Println(string(p))
 
 	err = resp.GetObject(callResp)
 	if err != nil {
