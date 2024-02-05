@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/labstack/gommon/log"
 	"gitlab.com/accumulatenetwork/accumulate/protocol"
@@ -89,32 +90,43 @@ type ExecuteDirectResponse struct {
 	SimpleHash      string   `json:"simpleHash"`
 }
 
+type V3 struct {
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
+}
+
 type QueryADIResponse struct {
 	Data *ADI `json:"data"`
+	V3   *V3  `json:"v3"`
 }
 
 type QueryKeyPageResponse struct {
 	Data *KeyPage `json:"data"`
+	V3   *V3      `json:"v3"`
 }
 
 type QueryTokenResponse struct {
 	Data *Token `json:"data"`
+	V3   *V3    `json:"v3"`
 }
 
 type QueryTokenAccountResponse struct {
 	Data *TokenAccount `json:"data"`
+	V3   *V3           `json:"v3"`
 }
 
 type QueryDataResponse struct {
 	Data *DataEntry `json:"data"`
+	V3   *V3        `json:"v3"`
 }
 
 type QueryDataSetResponse struct {
 	Items []*DataEntry `json:"items"`
+	V3    *V3          `json:"v3"`
 }
 
 type QueryPendingChainResponse struct {
 	Items []string `json:"items"`
+	V3    *V3      `json:"v3"`
 }
 
 type QueryTokenTxResponse struct {
@@ -131,6 +143,7 @@ type QueryTokenTxResponse struct {
 
 type QueryTxHistoryResponse struct {
 	Items []*QueryTokenTxResponse `json:"items"`
+	V3    *V3                     `json:"v3"`
 }
 
 // QueryADI gets Token info
