@@ -91,52 +91,38 @@ type ExecuteDirectResponse struct {
 }
 
 type QueryADIResponse struct {
-	Data *ADI `json:"data"`
-	V3   struct {
-		LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
-	} `json:"v3"`
+	Data          *ADI       `json:"data"`
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryKeyPageResponse struct {
-	Data *KeyPage `json:"data"`
-	V3   struct {
-		LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
-	} `json:"v3"`
+	Data          *KeyPage   `json:"data"`
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryTokenResponse struct {
-	Data *Token `json:"data"`
-	V3   struct {
-		LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
-	} `json:"v3"`
+	Data          *Token     `json:"data"`
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryTokenAccountResponse struct {
-	Data *TokenAccount `json:"data"`
-	V3   struct {
-		LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
-	} `json:"v3"`
+	Data          *TokenAccount `json:"data"`
+	LastBlockTime *time.Time    `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryDataResponse struct {
-	Data *DataEntry `json:"data"`
-	V3   struct {
-		LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
-	} `json:"v3"`
+	Data          *DataEntry `json:"data"`
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryDataSetResponse struct {
-	Items []*DataEntry `json:"items"`
-	V3    struct {
-		LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
-	} `json:"v3"`
+	Items         []*DataEntry `json:"items"`
+	LastBlockTime *time.Time   `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryPendingChainResponse struct {
-	Items []string `json:"items"`
-	V3    struct {
-		LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
-	} `json:"v3"`
+	Items         []string   `json:"items"`
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryTokenTxResponse struct {
@@ -152,10 +138,8 @@ type QueryTokenTxResponse struct {
 }
 
 type QueryTxHistoryResponse struct {
-	Items []*QueryTokenTxResponse `json:"items"`
-	V3    struct {
-		LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
-	} `json:"v3"`
+	Items         []*QueryTokenTxResponse `json:"items"`
+	LastBlockTime *time.Time              `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 // QueryADI gets Token info
