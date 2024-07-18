@@ -42,6 +42,20 @@ type AccumulateClient struct {
 	Validate      *validator.Validate
 }
 
+func notOlderThanOneMinute(fl validator.FieldLevel) bool {
+	// Get the value of the field
+	lastBlockTime, ok := fl.Field().Interface().(time.Time)
+	if !ok {
+		return false
+	}
+
+	// Calculate the difference between the current time and LastBlockTime
+	diff := time.Since(lastBlockTime)
+
+	// Check if the difference is less than or equal to 1 minute
+	return diff <= time.Minute
+}
+
 // NewAccumulateClient constructs the Accumulate client
 func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 
@@ -49,6 +63,11 @@ func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 
 	// init validator
 	c.Validate = validator.New()
+
+	err := c.Validate.RegisterValidation("notOlderThanOneMinute", notOlderThanOneMinute)
+	if err != nil {
+		return nil, fmt.Errorf("Error registering validation function: %s", err)
+	}
 
 	if conf.ACME.Node == "" {
 		return nil, fmt.Errorf("received empty node from config: %s", conf.ACME.Node)
@@ -65,7 +84,7 @@ func NewAccumulateClient(conf *config.Config) (*AccumulateClient, error) {
 	c.Client = jsonrpc.NewClientWithOpts(conf.ACME.Node, opts)
 
 	// check if config ADI is valid
-	_, err := c.QueryADI(&Params{URL: conf.ACME.BridgeADI})
+	_, err = c.QueryADI(&Params{URL: conf.ACME.BridgeADI})
 	if err != nil {
 		return nil, err
 	}

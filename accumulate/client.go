@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/labstack/gommon/log"
 	"gitlab.com/accumulatenetwork/accumulate/protocol"
@@ -90,31 +91,38 @@ type ExecuteDirectResponse struct {
 }
 
 type QueryADIResponse struct {
-	Data *ADI `json:"data"`
+	Data          *ADI       `json:"data"`
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryKeyPageResponse struct {
-	Data *KeyPage `json:"data"`
+	Data          *KeyPage   `json:"data"`
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryTokenResponse struct {
-	Data *Token `json:"data"`
+	Data          *Token     `json:"data"`
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryTokenAccountResponse struct {
-	Data *TokenAccount `json:"data"`
+	Data          *TokenAccount `json:"data"`
+	LastBlockTime *time.Time    `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryDataResponse struct {
-	Data *DataEntry `json:"data"`
+	Data          *DataEntry `json:"data"`
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryDataSetResponse struct {
-	Items []*DataEntry `json:"items"`
+	Items         []*DataEntry `json:"items"`
+	LastBlockTime *time.Time   `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryPendingChainResponse struct {
-	Items []string `json:"items"`
+	Items         []string   `json:"items"`
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryTokenTxResponse struct {
@@ -130,7 +138,8 @@ type QueryTokenTxResponse struct {
 }
 
 type QueryTxHistoryResponse struct {
-	Items []*QueryTokenTxResponse `json:"items"`
+	Items         []*QueryTokenTxResponse `json:"items"`
+	LastBlockTime *time.Time              `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 // QueryADI gets Token info
