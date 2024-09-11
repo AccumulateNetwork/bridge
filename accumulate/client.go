@@ -72,6 +72,7 @@ type DataEntry struct {
 		Type string   `json:"type" validate:"required"`
 		Data []string `json:"data" validate:"gt=0"`
 	}
+	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type Params struct {
@@ -111,13 +112,13 @@ type QueryTokenAccountResponse struct {
 }
 
 type QueryDataResponse struct {
-	Data          *DataEntry `json:"data"`
-	LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
+	Data *DataEntry `json:"data"`
+	//LastBlockTime *time.Time `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryDataSetResponse struct {
-	Items         []*DataEntry `json:"items"`
-	LastBlockTime *time.Time   `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
+	Items []*DataEntry `json:"items"`
+	//LastBlockTime *time.Time   `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
 }
 
 type QueryPendingChainResponse struct {
