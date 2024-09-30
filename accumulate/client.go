@@ -138,8 +138,7 @@ type QueryTokenTxResponse struct {
 }
 
 type QueryTxHistoryResponse struct {
-	Items         []*QueryTokenTxResponse `json:"items"`
-	LastBlockTime *time.Time              `json:"lastBlockTime" validate:"required,notOlderThanOneMinute"`
+	Items []*QueryTokenTxResponse `json:"items"`
 }
 
 // QueryADI gets Token info
