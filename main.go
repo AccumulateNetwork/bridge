@@ -1138,7 +1138,10 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 
 							// check if contract hash == mint entry safetxhash
 							if hexutil.Encode(contractHash) != mintEntry.SafeTxHash {
-								fmt.Println("[mint] mint entry safe tx hash:", mintEntry.SafeTxHash, "generated safe tx hash:", contractHash)
+								fmt.Println("[mint] mint entry safe tx hash:", mintEntry.SafeTxHash, "generated safe tx hash:", hexutil.Encode(contractHash))
+								fmt.Println("[debug] token address:", token.EVMAddress)
+								fmt.Println("[debug] memo:", cause.Transaction.Header.Memo)
+								fmt.Println("[debug] amount:", amount)
 								continue
 							}
 
