@@ -2,6 +2,7 @@ package gnosis
 
 import (
 	"math/big"
+	"strconv"
 	"testing"
 
 	"github.com/AccumulateNetwork/bridge/abiutil"
@@ -50,7 +51,7 @@ func TestCreateSafeMultisigTx(t *testing.T) {
 	req.Data = hexutil.Encode(data)
 	req.GasToken = abiutil.ZERO_ADDR
 	req.RefundReceiver = abiutil.ZERO_ADDR
-	req.Nonce = safe.Nonce
+	req.Nonce, _ = strconv.ParseInt(safe.Nonce, 10, 64)
 
 	resp, err := g.GetSafe()
 	assert.NoError(t, err)

@@ -11,6 +11,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -758,6 +759,12 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 							break
 						}
 
+						nonce, err := strconv.ParseInt(safe.Nonce, 10, 64)
+						if err != nil {
+							fmt.Println("[mint] can not parse int from nonce string:", err)
+							break
+						}
+
 						// check if there are pending txs at current nonce
 						safeTxs, err := g.GetSafeMultisigTxs()
 						if err != nil {
@@ -766,7 +773,7 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 						}
 
 						if len(safeTxs.Results) > 0 {
-							if safeTxs.Results[0].Nonce >= safe.Nonce {
+							if safeTxs.Results[0].Nonce >= nonce {
 								fmt.Println("[mint] stopping the process, gnosis safe has unprocessed tx with nonce", safeTxs.Results[0].Nonce)
 								break
 							}
@@ -931,7 +938,7 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 								safeTx.Data = hexutil.Encode(data)
 								safeTx.GasToken = abiutil.ZERO_ADDR
 								safeTx.RefundReceiver = abiutil.ZERO_ADDR
-								safeTx.Nonce = safe.Nonce
+								safeTx.Nonce = nonce
 								safeTx.ContractTransactionHash = hexutil.Encode(contractHash)
 								safeTx.Sender = g.PublicKey.Hex()
 								safeTx.Signature = hexutil.Encode(signature)
@@ -947,7 +954,7 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 
 								// create accumulate data entry
 								mintEntry.SafeTxHash = hexutil.Encode(contractHash)
-								mintEntry.SafeTxNonce = safe.Nonce
+								mintEntry.SafeTxNonce = nonce
 
 								mintEntryBytes, err := json.Marshal(mintEntry)
 								if err != nil {
@@ -995,6 +1002,12 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 						safe, err := g.GetSafe()
 						if err != nil {
 							fmt.Println("[mint] can not get gnosis safe:", err)
+							break
+						}
+
+						nonce, err := strconv.ParseInt(safe.Nonce, 10, 64)
+						if err != nil {
+							fmt.Println("[mint] can not parse int from nonce string:", err)
 							break
 						}
 
@@ -1104,7 +1117,7 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 							}
 
 							// check mint entry safe tx nonce
-							if mintEntry.SafeTxNonce != safe.Nonce {
+							if mintEntry.SafeTxNonce != nonce {
 								fmt.Println("[mint] mint entry safe tx nonce:", mintEntry.SafeTxNonce, "safe nonce:", safe.Nonce)
 								continue
 							}
@@ -1151,7 +1164,7 @@ func processNewDeposits(a *accumulate.AccumulateClient, e *evm.EVMClient, g *gno
 							safeTx.Data = hexutil.Encode(data)
 							safeTx.GasToken = abiutil.ZERO_ADDR
 							safeTx.RefundReceiver = abiutil.ZERO_ADDR
-							safeTx.Nonce = safe.Nonce
+							safeTx.Nonce = nonce
 							safeTx.ContractTransactionHash = hexutil.Encode(contractHash)
 							safeTx.Sender = g.PublicKey.Hex()
 							safeTx.Signature = hexutil.Encode(signature)
@@ -1208,7 +1221,13 @@ func submitEVMTxs(e *evm.EVMClient, g *gnosis.Gnosis, die chan bool) {
 						break
 					}
 
-					txs, err := g.GetSafeMultisigTxByNonce(safe.Nonce)
+					nonce, err := strconv.ParseInt(safe.Nonce, 10, 64)
+					if err != nil {
+						fmt.Println("[submit] can not parse int from nonce string:", err)
+						break
+					}
+
+					txs, err := g.GetSafeMultisigTxByNonce(nonce)
 					if err != nil {
 						fmt.Println("[submit] can not get gnosis safe txs:", err)
 						break

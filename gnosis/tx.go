@@ -19,6 +19,12 @@ func (g *Gnosis) SignMintTx(tokenAddress string, recipientAddress string, amount
 		return nil, nil, err
 	}
 
+	nonce := new(big.Int)
+	nonce, ok := nonce.SetString(safe.Nonce, 10)
+	if !ok {
+		return nil, nil, fmt.Errorf("cannot parse bigInt from safe nonce %s", safe.Nonce)
+	}
+
 	data, err := abiutil.GenerateMintTxData(tokenAddress, recipientAddress, amount)
 	if err != nil {
 		return nil, nil, err
@@ -36,7 +42,7 @@ func (g *Gnosis) SignMintTx(tokenAddress string, recipientAddress string, amount
 		RefundReceiver: common.HexToAddress(abiutil.ZERO_ADDR),
 		BaseGas:        *big.NewInt(0),
 		SafeTxGas:      *big.NewInt(0),
-		Nonce:          *big.NewInt(safe.Nonce),
+		Nonce:          *nonce,
 		ChainId:        math.NewHexOrDecimal256(int64(g.ChainId)),
 	}
 

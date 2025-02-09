@@ -86,6 +86,12 @@ func main() {
 						return err
 					}
 
+					nonce, err := strconv.ParseInt(safe.Nonce, 10, 64)
+					if err != nil {
+						fmt.Println("[can not parse int from nonce string:", err)
+						return err
+					}
+
 					data, err := abiutil.GenerateMintTxData(token, recipient, big.NewInt(amount))
 					if err != nil {
 						fmt.Print("can not generate mint tx: ")
@@ -103,7 +109,7 @@ func main() {
 					tx.Data = hexutil.Encode(data)
 					tx.GasToken = abiutil.ZERO_ADDR
 					tx.RefundReceiver = abiutil.ZERO_ADDR
-					tx.Nonce = safe.Nonce
+					tx.Nonce = nonce
 					tx.ContractTransactionHash = hexutil.Encode(contractHash)
 					tx.Sender = g.PublicKey.Hex()
 					tx.Signature = hexutil.Encode(signature)

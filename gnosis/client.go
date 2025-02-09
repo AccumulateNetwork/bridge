@@ -12,7 +12,7 @@ import (
 
 type ResponseSafe struct {
 	Address         string   `json:"address"`
-	Nonce           int64    `json:"nonce"`
+	Nonce           string   `json:"nonce"`
 	Threshold       int64    `json:"threshold"`
 	Owners          []string `json:"owners"`
 	MasterCopy      string   `json:"masterCopy"`
