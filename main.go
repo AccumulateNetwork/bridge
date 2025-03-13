@@ -38,6 +38,7 @@ const NUMBER_OF_ACCUMULATE_TOKEN_TXS = 100
 const NUMBER_OF_TOKEN_REGISTRY_ENTRIES = 1000
 
 var LatestCheckedDeposits map[string]int64
+var LatestCheckedEVMHeight int64
 
 func main() {
 
@@ -492,6 +493,9 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 
 					// looking for evm logs starting from latest height+1
 					start := burnEntry.BlockHeight + 1
+					if LatestCheckedEVMHeight > burnEntry.BlockHeight {
+						start = LatestCheckedEVMHeight + 1
+					}
 
 					fmt.Println("[release] Parsing new EVM events for", bridge, "starting from blockHeight", start)
 					logs, err := e.ParseBridgeLogs("Burn", bridge, &evm.BlockRange{From: start})
@@ -581,6 +585,8 @@ func processBurnEvents(a *accumulate.AccumulateClient, e *evm.EVMClient, bridge 
 						fmt.Println("[release] data entry created:", entryhash)
 
 						knownHeight = int(l.BlockHeight)
+
+						LatestCheckedEVMHeight = int64(l.BlockHeight)
 
 					}
 
