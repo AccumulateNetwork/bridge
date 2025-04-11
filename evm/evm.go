@@ -17,6 +17,7 @@ const (
 	GAS_LIMIT_GOERLI    = 200000
 	GAS_LIMIT_ARBITRUM  = 5000000
 	GAS_LIMIT_BNB_CHAIN = 200000
+	GAS_LIMIT_BASE      = 200000
 )
 
 type EVMClient struct {
@@ -68,6 +69,8 @@ func NewEVMClient(conf *config.Config) (*EVMClient, error) {
 		c.GasLimit = GAS_LIMIT_GOERLI
 	case 56:
 		c.GasLimit = GAS_LIMIT_BNB_CHAIN
+	case 8453:
+		c.GasLimit = GAS_LIMIT_BASE
 	case 42161:
 		c.GasLimit = GAS_LIMIT_ARBITRUM
 	default:

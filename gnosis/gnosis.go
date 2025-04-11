@@ -16,6 +16,7 @@ const (
 	GNOSIS_API_GOERLI    = "https://safe-transaction-goerli.safe.global/api/v1/"
 	GNOSIS_API_ARBITRUM  = "https://safe-transaction-arbitrum.safe.global/api/v1/"
 	GNOSIS_API_BNB_CHAIN = "https://safe-transaction-bsc.safe.global/api/v1/"
+	GNOSIS_API_BASE      = "https://safe-transaction-base.safe.global/api/v1/"
 )
 
 type Gnosis struct {
@@ -42,6 +43,8 @@ func NewGnosis(conf *config.Config) (*Gnosis, error) {
 		g.API = GNOSIS_API_GOERLI
 	case 56:
 		g.API = GNOSIS_API_BNB_CHAIN
+	case 8453:
+		g.API = GNOSIS_API_BASE
 	case 42161:
 		g.API = GNOSIS_API_ARBITRUM
 	default:
